@@ -64,4 +64,5 @@ struct inode {
    uint32_t unused;
 };
 
-void printPartition(struct part_entry  partitionPtr);
+void printPartition(struct part_entry partitionPtr);
+void printSuperblock(struct superblock sb);
