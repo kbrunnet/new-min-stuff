@@ -1,7 +1,7 @@
-minls: minls.c super.h partition.h
+minls: minls.c minls.h
 	gcc minls.c -o minls
 
-minget: minget.c super.h partition.h
+minget: minget.c minls.h
 	gcc minget.c -o minget
 
 clean:
