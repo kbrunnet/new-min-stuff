@@ -63,3 +63,5 @@ struct inode {
    uint32_t two_indirect;
    uint32_t unused;
 };
+
+void printPartition(struct part_entry  partitionPtr);
