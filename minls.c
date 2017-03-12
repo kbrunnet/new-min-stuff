@@ -56,11 +56,18 @@ int main(int argc, char *const argv[])
       printPartition(partition_table[i]);
    }
 
+   uint16_t *ptValid = malloc(sizeof(uint16_t));
+   fread(ptValid, sizeof(uint16_t), 1, image);
+   if (*ptValid != 0xAA55) {
+      printf("not a valid partition table\n");
+   }
+
    fseek(image, 1024, SEEK_SET);
 
    struct superblock sb;
    fread(&sb, sizeof(struct superblock), 1, image);
-   printSuperBlock(&sb);
+
+   printSuperblock(sb);
 
    exit(EXIT_SUCCESS);
 }
@@ -76,5 +83,21 @@ void printPartition(struct part_entry  partitionPtr) {
    printf("  %X\n", partitionPtr.last_cyl);
    printf("  %X\n", partitionPtr.lowsec);
    printf("  %X\n", partitionPtr.size);
+}
 
+void printSuperblock(struct superblock sb) {
+   puts("SuperBlock: ");
+   printf("  ninodes: %d\n", sb.ninodes);
+   printf("  pad1: %X\n", sb.pad1);
+   printf("  i_blocks: %d\n", sb.i_blocks);
+   printf("  z_blocks: %d\n", sb.z_blocks);
+   printf("  firstdata: %X\n", sb.firstdata);
+   printf("  log_zone_size: %X\n", sb.log_zone_size);
+   printf("  pad2: %X\n", sb.pad2);
+   printf("  max_file: %X\n", sb.max_file);
+   printf("  zones: %X\n", sb.zones);
+   printf("  magic: %X\n", sb.magic);
+   printf("  pad3: %X\n", sb.pad3);
+   printf("  blocksize: %X\n", sb.blocksize);
+   printf("  subversion: %X\n", sb.subversion);
 }
