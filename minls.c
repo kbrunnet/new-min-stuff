@@ -1,4 +1,14 @@
 #include "minls.h"
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+
+#include "partition.h"
+#include "super.h"
+
+void printPartition(struct part_entry  partitionPtr);
 
 int main(int argc, char *const argv[])
 {
@@ -42,15 +52,15 @@ int main(int argc, char *const argv[])
    fread(partition_table, sizeof(struct part_entry), 4, image);
 
    for (i = 0; i < 4; i++) {
-        printf("i: %d\n", i);
-        printPartition(partition_table[i]);
+      printf("i: %d\n", i);
+      printPartition(partition_table[i]);
    }
 
    fseek(image, 1024, SEEK_SET);
 
    struct superblock sb;
    fread(&sb, sizeof(struct superblock), 1, image);
-
+   printSuperBlock(&sb);
 
    exit(EXIT_SUCCESS);
 }
