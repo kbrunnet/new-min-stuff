@@ -5,9 +5,11 @@
 #include <string.h>
 
 #include "partition.h"
+void printPartition(struct part_entry  partitionPtr);
 
 int main(int argc, char *const argv[])
 {
+   int i;
    int flags, opt;
    int nsecs, tfnd;
 
@@ -46,6 +48,11 @@ int main(int argc, char *const argv[])
    struct part_entry partition_table[4];
    fread(partition_table, sizeof(struct part_entry), 4, image);
 
+   for (i = 0; i < 4; i++) {
+        printf("i: %d\n", i);
+        printPartition(partition_table[i]);
+   }
+
    printf("first part bootable? %X\n", partition_table[0].bootind);
    printf("second part bootable? %X\n", partition_table[1].bootind);
    printf("third part bootable? %X\n", partition_table[2].bootind);
@@ -72,19 +79,6 @@ int main(int argc, char *const argv[])
    // printf("magic number: %X\n", *( 0x1BE/32 + (unsigned char *)ptr));
 
 
-   // struct part_entry *pPtr = (struct part_entry *) ptr;
-   // printf("here\n");
-   // printf("%X\n", pPtr->bootind);
-   // printf("%X\n", pPtr->start_head);
-   // printf("%X\n", pPtr->start_sec);
-   // printf("%X\n", pPtr->start_cyl);
-   // printf("%X\n", pPtr->sysind);
-   // printf("%X\n", pPtr->last_head);
-   // printf("%X\n", pPtr->last_sec);
-   // printf("%X\n", pPtr->last_cyl);
-   // printf("%X\n", pPtr->lowsec);
-   // printf("%X\n", pPtr->size);
-
    // int i;
    // for (i = 0; i < 1000; i++) {
    // 	printf("%X: %X\n", ptr, *(unsigned char *)ptr);
@@ -95,4 +89,18 @@ int main(int argc, char *const argv[])
    /* Other code omitted */
 
    exit(EXIT_SUCCESS);
+}
+
+void printPartition(struct part_entry  partitionPtr) {
+   printf("  %X\n", partitionPtr.bootind);
+   printf("  %X\n", partitionPtr.start_head);
+   printf("  %X\n", partitionPtr.start_sec);
+   printf("  %X\n", partitionPtr.start_cyl);
+   printf("  %X\n", partitionPtr.sysind);
+   printf("  %X\n", partitionPtr.last_head);
+   printf("  %X\n", partitionPtr.last_sec);
+   printf("  %X\n", partitionPtr.last_cyl);
+   printf("  %X\n", partitionPtr.lowsec);
+   printf("  %X\n", partitionPtr.size);
+
 }
