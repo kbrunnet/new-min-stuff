@@ -59,6 +59,22 @@ int main(int argc, char *const argv[])
 
    printSuperblock(sb);
 
+   if (sb.magic != 0x4D5A) {
+      printf("invalid superblock, magic number must be 0x4D5A");
+      exit(EXIT_FAILURE);
+   }
+
+   unsigned int zone_size = sb.log_zone_size ? (sb.log_zone_size << 2) : sb.blocksize;
+   unsigned long firstDataAddress = sb.firstdata * zone_size;
+   printf("firstDataAddress: %u\n", firstDataAddress);
+
+   fseek(image, (2 + sb.i_blocks + sb.z_blocks) * sb.blocksize, SEEK_SET);
+   struct inode iTable[sb.ninodes];
+   fread(iTable, sizeof(struct inode), sb.ninodes, image);
+
+   printf("root inode: \n");
+   printInode(iTable[0]);
+   
    exit(EXIT_SUCCESS);
 }
 
@@ -78,16 +94,35 @@ void printPartition(struct part_entry  partitionPtr) {
 void printSuperblock(struct superblock sb) {
    puts("SuperBlock: ");
    printf("  ninodes: %d\n", sb.ninodes);
-   printf("  pad1: %X\n", sb.pad1);
+   printf("  pad1: %d\n", sb.pad1);
    printf("  i_blocks: %d\n", sb.i_blocks);
    printf("  z_blocks: %d\n", sb.z_blocks);
-   printf("  firstdata: %X\n", sb.firstdata);
-   printf("  log_zone_size: %X\n", sb.log_zone_size);
-   printf("  pad2: %X\n", sb.pad2);
-   printf("  max_file: %X\n", sb.max_file);
-   printf("  zones: %X\n", sb.zones);
-   printf("  magic: %X\n", sb.magic);
-   printf("  pad3: %X\n", sb.pad3);
-   printf("  blocksize: %X\n", sb.blocksize);
-   printf("  subversion: %X\n", sb.subversion);
+   printf("  firstdata: %d\n", sb.firstdata);
+   printf("  log_zone_size: %d\n", sb.log_zone_size);
+   printf("  pad2: %d\n", sb.pad2);
+   printf("  max_file: %u\n", sb.max_file);
+   printf("  zones: %d\n", sb.zones);
+   printf("  magic: 0x%x\n", sb.magic);
+   printf("  pad3: 0x%x\n", sb.pad3);
+   printf("  blocksize: %d\n", sb.blocksize);
+   printf("  subversion: %d\n", sb.subversion);
+}
+
+void printInode(struct inode in) {
+   int z;
+   puts("inode: ");
+   printf("  mode: 0x%x\n", in.mode);
+   printf("  links: %u\n", in.links);
+   printf("  uid: %u\n", in.uid);
+   printf("  gid: %u\n", in.gid);
+   printf("  size: %u\n", in.size);
+   printf("  atime: %u\n", in.atime);
+   printf("  mtime: %u\n", in.mtime);
+   printf("  ctime: %u\n", in.ctime);
+   printf("  Direct zones: \n");
+   for (z = 0; z < DIRECT_ZONES; z++) {
+      printf("\tzone[%u]\t=\t%u\n", z, in.zone[z]);
+   }
+   printf("  indirect: %u\n", in.indirect);
+   printf("  double: %u\n", in.two_indirect);
 }

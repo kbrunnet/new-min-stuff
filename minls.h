@@ -66,3 +66,4 @@ struct inode {
 
 void printPartition(struct part_entry partitionPtr);
 void printSuperblock(struct superblock sb);
+void printInode(struct inode in);
