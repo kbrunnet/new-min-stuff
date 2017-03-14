@@ -1,14 +1,4 @@
 #include "minls.h"
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-
-#include "partition.h"
-#include "super.h"
-
-void printPartition(struct part_entry  partitionPtr);
 
 int main(int argc, char *const argv[])
 {
@@ -74,7 +64,8 @@ int main(int argc, char *const argv[])
       exit(EXIT_FAILURE);
    }
 
-   unsigned int zone_size = sb.log_zone_size ? (sb.log_zone_size << 2) : sb.blocksize;
+   unsigned int zone_size = sb.log_zone_size ? 
+   (sb.log_zone_size << 2) : sb.blocksize;
    unsigned long firstDataAddress = sb.firstdata * zone_size;
    printf("firstDataAddress: %u\n", firstDataAddress);
 
@@ -82,10 +73,29 @@ int main(int argc, char *const argv[])
    struct inode iTable[sb.ninodes];
    fread(iTable, sizeof(struct inode), sb.ninodes, image);
 
+   printf("\n");
    printf("root inode: \n");
    printInode(iTable[0]);
+
+   int numFiles = iTable[0].size/sizeof(struct fileEntry);
+   fseek(image, firstDataAddress, SEEK_SET);
+   struct fileEntry fileEntries[numFiles];
+   fread(fileEntries, sizeof(struct fileEntry), numFiles, image);
+   printFiles(fileEntries, numFiles);
    
    exit(EXIT_SUCCESS);
+}
+
+void printFiles(struct fileEntry *fileEntries, int numFiles) {
+   int i;
+   for(i = 0; i < numFiles; i++) {
+      printFile(&fileEntries[i]);
+   }
+}
+
+void printFile(struct fileEntry *file) {
+   printf("%d: ", file->inode);
+   printf("%s\n", file->name);
 }
 
 void printPartition(struct part_entry  partitionPtr) {
