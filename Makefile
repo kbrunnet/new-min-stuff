@@ -1,4 +1,4 @@
-all: minls minget
+# all: minls minget
 minls: minls.c minls.h
 	gcc minls.c -o minls
 

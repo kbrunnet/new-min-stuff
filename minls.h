@@ -95,10 +95,9 @@ struct fileEntry {
    char name[DIRSIZ];
 };
 
+struct inode traversePath(struct inode *root, unsigned int ninodes, char *path);
 void printPartition(struct part_entry partitionPtr);
 void printSuperblock(struct superblock sb);
 void printFile(struct fileEntry *file);
 void printFiles(struct fileEntry *fileEntries, int numFiles);
 void printInode(struct inode in);
-void printInodeFiles(struct inode *inode);
-void *getInode(int inodeNum);
