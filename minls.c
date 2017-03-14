@@ -64,23 +64,6 @@ int main(int argc, char *const argv[])
    while (file = strtok(NULL, "/")) {
       printf("file: %s\n", file);
    }
-   else {
-      fprintf(stderr, "Usage: minls [ -v ] [ -p part [ -s subpart ] ] imagefile [ path ]\n");
-   }
-   optind++;
-   if (optind < argc) {
-      strcpy(path, argv[optind]);
-   }
-   else {
-      strcpy(path, "/");
-   }
-   if (path[0] != '/') {
-      char pathBase[PATH_MAX] = "";
-      getcwd(pathBase, PATH_MAX);
-      strcat(pathBase, "/");
-      strcat(pathBase, path);
-      strcpy(path, pathBase);
-   }
 
    FILE *image = fopen(imagefile, "rb");
 
