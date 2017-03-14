@@ -1,5 +1,9 @@
 #include "minls.h"
 
+unsigned int zone_size;
+FILE *image;
+struct inode *iTable;
+
 int main(int argc, char *const argv[])
 {
    int i;
@@ -23,7 +27,6 @@ int main(int argc, char *const argv[])
          case 's':
             subpartition = atoi(optarg);
          break;
-
          default:
             fprintf(stderr, "Usage: minls [ -v ] [ -p part [ -s subpart ] ] imagefile [ path ]\n");
             exit(EXIT_FAILURE);
@@ -51,31 +54,33 @@ int main(int argc, char *const argv[])
       strcpy(path, pathBase);
    }
 
-   /*
+   
    printf("verbose: %d\npartition: %d\nsubpartition:%d\nimagefile:%s\npath:%s\n",
             verbose,
             partition,
             subpartition,
             imagefile,
             path);
-   */
+   
 
    char *file = strtok(path, "/");
    while (file = strtok(NULL, "/")) {
       printf("file: %s\n", file);
    }
 
-   FILE *image = fopen(imagefile, "rb");
+   // printf("name argument = %s\n", argv[optind]);
+   // printf("name argument = %s\n", argv[optind+1]);
+   image = fopen(imagefile, "rb");
 
    fseek(image, 0x1BE, SEEK_SET);
 
    struct part_entry partition_table[4];
    fread(partition_table, sizeof(struct part_entry), 4, image);
 
-   for (i = 0; i < 4; i++) {
-      printf("i: %d\n", i);
-      printPartition(partition_table[i]);
-   }
+   // for (i = 0; i < 4; i++) {
+   //    printf("i: %d\n", i);
+   //    printPartition(partition_table[i]);
+   // }
 
    uint16_t *ptValid = malloc(sizeof(uint16_t));
    fread(ptValid, sizeof(uint16_t), 1, image);
@@ -88,45 +93,84 @@ int main(int argc, char *const argv[])
    struct superblock sb;
    fread(&sb, sizeof(struct superblock), 1, image);
 
-   printSuperblock(sb);
+   // printSuperblock(sb);
 
-   if (sb.magic != 0x4D5A) {
-      printf("invalid superblock, magic number must be 0x4D5A");
-      exit(EXIT_FAILURE);
-   }
+   // if (sb.magic != 0x4D5A) {
+   //    printf("invalid superblock, magic number must be 0x4D5A");
+   //    // (EXIT_FAILURE);
+   // }
 
-   unsigned int zone_size = sb.log_zone_size ? 
+   zone_size = sb.log_zone_size ? 
    (sb.log_zone_size << 2) : sb.blocksize;
-   unsigned long firstDataAddress = sb.firstdata * zone_size;
-   printf("firstDataAddress: %u\n", firstDataAddress);
+   // unsigned long firstDataAddress = sb.firstdata * zone_size;
+   // printf("firstDataAddress: %u\n", firstDataAddress);
 
    fseek(image, (2 + sb.i_blocks + sb.z_blocks) * sb.blocksize, SEEK_SET);
-   struct inode iTable[sb.ninodes];
+   // struct inode iTable[sb.ninodes];
+   iTable = (struct inode*) malloc(sb.ninodes * sizeof(struct inode));
    fread(iTable, sizeof(struct inode), sb.ninodes, image);
 
-   printf("\n");
-   printf("root inode: \n");
-   printInode(iTable[0]);
+   printInodeFiles(iTable);
 
-   int numFiles = iTable[0].size/sizeof(struct fileEntry);
-   fseek(image, firstDataAddress, SEEK_SET);
-   struct fileEntry fileEntries[numFiles];
-   fread(fileEntries, sizeof(struct fileEntry), numFiles, image);
-   printFiles(fileEntries, numFiles);
+   // printf("\n");
+   // printf("root inode: \n");
+   // printInode(iTable[0]);
+
+   // int numFiles = iTable[0].size/sizeof(struct fileEntry);
+   // fseek(image, firstDataAddress, SEEK_SET);
+   // struct fileEntry fileEntries[numFiles];
+   // fread(fileEntries, sizeof(struct fileEntry), numFiles, image);
+   // printFiles(fileEntries, numFiles);
    
    exit(EXIT_SUCCESS);
 }
 
+// struct inode *inodes;
+//  creates an array of all the inodes for files and 
+//    directories inside the root directory
+// void createInodeArray(struct inode *root) {
+
+// }
+
+void printInodeFiles(struct inode *in) {
+   int i;
+   for (i = 0; i < DIRECT_ZONES; i ++) {
+      int zoneNum = in->zone[i];
+      if (zoneNum) {
+         unsigned long addrZone = zone_size * zoneNum;
+         int numFiles = in->size/sizeof(struct fileEntry);
+         fseek(image, addrZone, SEEK_SET);
+
+         struct fileEntry fileEntries[numFiles];
+         fread(fileEntries, sizeof(struct fileEntry), numFiles, image);
+         
+         printFiles(fileEntries, numFiles);
+
+         
+      }
+   }
+} 
+
 void printFiles(struct fileEntry *fileEntries, int numFiles) {
    int i;
    for(i = 0; i < numFiles; i++) {
+      // int inodeNum = &fileEntries[i]->inode;
       printFile(&fileEntries[i]);
    }
 }
 
 void printFile(struct fileEntry *file) {
-   printf("%d: ", file->inode);
-   printf("%s\n", file->name);
+   struct inode *iNode = (struct inode *) getInode(file->inode);
+   // if (MIN_ISREG(iNode->mode)) {
+      // printf("%u ", iNode->mode);
+      // printf(" %u ", iNode->size);
+      printf("%d ", file->inode);
+      printf("%s\n", file->name);
+   // }
+}
+
+void *getInode(int inodeNum) {
+   return &iTable[inodeNum];
 }
 
 void printPartition(struct part_entry  partitionPtr) {

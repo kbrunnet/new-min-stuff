@@ -100,3 +100,5 @@ void printSuperblock(struct superblock sb);
 void printFile(struct fileEntry *file);
 void printFiles(struct fileEntry *fileEntries, int numFiles);
 void printInode(struct inode in);
+void printInodeFiles(struct inode *inode);
+void *getInode(int inodeNum);
