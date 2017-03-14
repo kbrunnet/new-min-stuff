@@ -9,22 +9,22 @@
 #define PMAGIC510 0x55
 #define PMAGIC511 0xAA
 #define MINIXPART 0x81
-#define MIN MAGIC 0x4d5a /* the minix magic number */
-#define MIN MAGIC REV 0x5a4d /* the minix magic number reversed\
-#define MIN MAGIC OLD 0x2468 /* the v2 minix magic number */
-#define MIN MAGIC REV OLD 0x6824 /* the v2 magic number reversed\
+#define MIN_MAGIC 0x4d5a /* the minix magic number */
+#define MIN_MAGIC_REV 0x5a4d /* the minix magic number reversed\
+#define MIN_MAGIC OLD 0x2468 /* the v2 minix magic number */
+#define MIN_MAGIC_REV_OLD 0x6824 /* the v2 magic number reversed\
 * we have an endian problem */
-#define MIN ISREG(m) (((m)&0170000)==0100000)
-#define MIN ISDIR(m) (((m)&0170000)==0040000)
-#define MIN IRUSR 0400
-#define MIN IWUSR 0200
-#define MIN IXUSR 0100
-#define MIN IRGRP 0040
-#define MIN IWGRP 0020
-#define MIN IXGRP 0010
-#define MIN IROTH 0004
-#define MIN IWOTH 0002
-#define MIN IXOTH 0001
+#define MIN_ISREG(m) (((m)&0170000)==0100000)
+#define MIN_ISDIR(m) (((m)&0170000)==0040000)
+#define MIN_IRUSR 0400
+#define MIN_IWUSR 0200
+#define MIN_IXUSR 0100
+#define MIN_IRGRP 0040
+#define MIN_IWGRP 0020
+#define MIN_IXGRP 0010
+#define MIN_IROTH 0004
+#define MIN_IWOTH 0002
+#define MIN_IXOTH 0001
 
 struct part_entry {
    unsigned char bootind;      /* boot indicator 0/ACTIVE_FLAG   */
@@ -96,3 +96,6 @@ struct fileEntry {
 
 void printPartition(struct part_entry partitionPtr);
 void printSuperblock(struct superblock sb);
+void printFile(struct fileEntry *file);
+void printFiles(struct fileEntry *fileEntries, int numFiles);
+void printInode(struct inode in);
