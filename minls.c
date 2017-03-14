@@ -3,38 +3,62 @@
 int main(int argc, char *const argv[])
 {
    int i;
-   int flags, opt;
-   int nsecs, tfnd;
+   int verbose = 0;
+   int partition = -1;
+   int subpartition = -1;
+   char imagefile[NAME_MAX] = "";
+   char path[PATH_MAX] = "";
+   int opt;
 
-   nsecs = 0;
-   tfnd = 0;
-   flags = 0;
-   while ((opt = getopt(argc, argv, "nt:")) != -1) {
+   while ((opt = getopt(argc, argv, "vp:s:")) != -1) {
       switch (opt) {
-      case 'n':
-         flags = 1;
+         case 'v':
+            verbose++;
          break;
-      case 't':
-         nsecs = atoi(optarg);
-         tfnd = 1;
-         break;
-      default:
 
-         fprintf(stderr, "Usage: %s [-t nsecs] [-n] name\n",
-                 argv[0]);
-         exit(EXIT_FAILURE);
+         case 'p':
+            partition = atoi(optarg);
+         break;
+         
+         case 's':
+            subpartition = atoi(optarg);
+         break;
+
+         default:
+            fprintf(stderr, "Usage: minls [ -v ] [ -p part [ -s subpart ] ] imagefile [ path ]\n");
+            exit(EXIT_FAILURE);
       }
    }
 
-   printf("flags=%d; tfnd=%d; optind=%d\n", flags, tfnd, optind);
-
-   if (optind >= argc) {
-      fprintf(stderr, "Expected argument after options\n");
-      exit(EXIT_FAILURE);
+   if (optind < argc) {
+      strcpy(imagefile, argv[optind]);
+   }
+   else {
+      fprintf(stderr, "Usage: minls [ -v ] [ -p part [ -s subpart ] ] imagefile [ path ]\n");
+   }
+   optind++;
+   if (optind < argc) {
+      strcpy(path, argv[optind]);
+   }
+   else {
+      strcpy(path, "/");
+   }
+   if (path[0] != '/') {
+      char pathBase[PATH_MAX] = "";
+      getcwd(pathBase, PATH_MAX);
+      strcat(pathBase, "/");
+      strcat(pathBase, path);
+      strcpy(path, pathBase);
    }
 
-   printf("name argument = %s\n", argv[optind]);
-   FILE *image = fopen(argv[optind], "rb");
+   printf("verbose: %d\npartition: %d\nsubpartition:%d\nimagefile:%s\npath:%s\n",
+            verbose,
+            partition,
+            subpartition,
+            imagefile,
+            path);
+
+   FILE *image = fopen(imagefile, "rb");
 
    fseek(image, 0x1BE, SEEK_SET);
 
