@@ -3,10 +3,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <linux/limits.h>
 
 /* constants */
-#define PTABLE OFFSET 0x1BE
+#define PTABLE_OFFSET 0x1BE
 #define PMAGIC510 0x55
 #define PMAGIC511 0xAA
 #define MINIXPART 0x81
