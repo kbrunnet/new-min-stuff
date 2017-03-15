@@ -5,6 +5,7 @@ static struct inode *iTable;
 static unsigned long firstDataAddress;
 static FILE *image;
 static int numInodes;
+static char fileName[PATH_MAX] = "";
 
 int main(int argc, char *const argv[])
 {
@@ -15,7 +16,6 @@ int main(int argc, char *const argv[])
    char imagefile[NAME_MAX] = "";
    char path[PATH_MAX] = "";
    int opt;
-
    while ((opt = getopt(argc, argv, "vp:s:")) != -1) {
       switch (opt) {
          case 'v':
@@ -35,7 +35,6 @@ int main(int argc, char *const argv[])
             exit(EXIT_FAILURE);
       }
    }
-
    if (optind < argc) {
       strcpy(imagefile, argv[optind]);
    }
@@ -45,6 +44,7 @@ int main(int argc, char *const argv[])
    optind++;
    if (optind < argc) {
       strcpy(path, argv[optind]);
+      strcpy(fileName, argv[optind]);
    }
    else {
       strcpy(path, "/");
@@ -109,13 +109,24 @@ int main(int argc, char *const argv[])
 
    /* Read the root directory table */
    fseek(image, (2 + sb.i_blocks + sb.z_blocks) * sb.blocksize, SEEK_SET);
-   traversePath(iTable, sb.ninodes, path);
 
    iTable = (struct inode*) malloc(numInodes * sizeof(struct inode));
    fread(iTable, sizeof(struct inode), numInodes, image);
+   // printf("numInode %d\n", numInodes);
 
-   printInodeFiles(iTable);
+   // printInodeFiles(iTable);
+
+   // printInode(iTable[16]);
+   // printInodeFiles(&iTable[16]);
    
+   // printf("\n");
+   // printf("\n");
+   // printf("\n");
+
+   struct inode destFile = traversePath(iTable, sb.ninodes, path);
+   // printf("INODE RETURNED: \n");
+   printInodeFiles(&destFile);
+
    exit(EXIT_SUCCESS);
 }
 
@@ -124,33 +135,28 @@ int main(int argc, char *const argv[])
  * of the requested file or directory.
  */
 struct inode traversePath(struct inode *inodeTable, uint32_t ninodes, char *path) {
+   // printf("here\n");
    struct inode currnode = inodeTable[0];
 
    char *file = strtok(path, "/");
    
    while (file) {
-
       int numFiles = currnode.size / sizeof(struct fileEntry);
-      fseek(image, firstDataAddress, SEEK_SET);
+      fseek(image, currnode.zone[0] * zone_size, SEEK_SET);
       struct fileEntry fileEntries[numFiles];
       fread(fileEntries, sizeof(struct fileEntry), numFiles, image);
-      printFiles(fileEntries, numFiles);
 
       struct fileEntry *currEntry = fileEntries;
       while (strcmp(currEntry->name, file) && 
              currEntry < fileEntries + numFiles) {
          currEntry++;
       }
-      if (currEntry == fileEntries + numFiles) {
+
+      if (currEntry >= fileEntries + numFiles) {
          fprintf(stderr, "File does not exist: %s\n", file);
          exit(EXIT_FAILURE);
       }
-      
-      printf("inode for file '%s':\n", file);
-      printInode(currnode);
-
-      printf("found file %s: see? %s\n", file, currEntry->name);
-      currnode = inodeTable[currEntry->inode];
+      currnode = *(struct inode *)getInode(currEntry->inode);
 
       file = strtok(NULL, "/");
    }
@@ -159,19 +165,24 @@ struct inode traversePath(struct inode *inodeTable, uint32_t ninodes, char *path
 }
 
 void printInodeFiles(struct inode *in) {
+   if (MIN_ISREG(in->mode)) {
+      printPermissions(in->mode);
+      printf("%10u ", in->size);
+      printf("%s\n", fileName);
+   }
    int i;
    for (i = 0; i < DIRECT_ZONES; i++) {
-      int zoneNum = in->zone[i];
+      unsigned long zoneNum = in->zone[i];
       if (zoneNum) {
          unsigned long addrZone = zone_size * zoneNum;
          int numFiles = in->size/sizeof(struct fileEntry);
          fseek(image, addrZone, SEEK_SET);
 
-         struct fileEntry fileEntries[numFiles];
-         fread(fileEntries, sizeof(struct fileEntry), numFiles, image);
-         
-         printFiles(fileEntries, numFiles);
-
+         if (MIN_ISDIR(in->mode)) {
+            struct fileEntry *fileEntries = malloc(sizeof(struct fileEntry) * numFiles);
+            fread(fileEntries, sizeof(struct fileEntry), numFiles, image);
+            printFiles(fileEntries, numFiles);
+         }
       }
    }
 }
@@ -179,17 +190,20 @@ void printInodeFiles(struct inode *in) {
 void printFiles(struct fileEntry *fileEntries, int numFiles) {
    int i;
    for(i = 0; i < numFiles; i++) {
+      // printf("%u\n", fileEntries[i].inode);
       printFile(&fileEntries[i]);
    }
 }
 
 void printFile(struct fileEntry *file) {
+   printf("%d\n", file->inode);
    struct inode *iNode = (struct inode *) getInode(file->inode);
    if (iNode == NULL) {
       //if it gets here the inode is either
       //not stored inside our iTable 
       //OR, the inode was zero which is an
       //invalid inode
+      printf("null Inode\n");
    }
    else {   
       printPermissions(iNode->mode);
@@ -221,6 +235,7 @@ void printSinglePerm(int print, char c) {
 }
 
 void *getInode(int inodeNum) {
+   // printf("getting inode: %d\n", inodeNum);
    if (inodeNum == 0) {
       return NULL;
    }
