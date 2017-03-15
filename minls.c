@@ -227,19 +227,15 @@ void printInodeFiles(struct inode *in) {
       printf("%s\n", fileName);
    }
    int i;
-   for (i = 0; i < DIRECT_ZONES; i++) {
-      unsigned long zoneNum = in->zone[i];
-      if (zoneNum) {
-         unsigned long addrZone = zone_size * zoneNum;
-         int numFiles = in->size/sizeof(struct fileEntry);
-         fseek(image, addrZone, SEEK_SET);
 
-         if (MIN_ISDIR(in->mode)) {
-            struct fileEntry *fileEntries = malloc(sizeof(struct fileEntry) * numFiles);
-            fread(fileEntries, sizeof(struct fileEntry), numFiles, image);
-            printFiles(fileEntries, numFiles);
-         }
+   if (MIN_ISDIR(in->mode)) {
+      struct fileEntry *fileEntries = getFileEntries(*in);
+      int numFiles = in->size/sizeof(struct fileEntry);
+      // for (i = 0; i < numFiles; i++) {
+      if (in->zone[i]) {
+         printFiles(fileEntries + i, numFiles);
       }
+      // }
    }
 }
 
