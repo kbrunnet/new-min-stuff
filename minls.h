@@ -105,3 +105,5 @@ void printInodeFiles(struct inode *in);
 void printPermissions(uint16_t mode);
 void printSinglePerm(int print, char c);
 void *getInode(int inodeNum);
+struct fileEntry *getFileEntries(struct inode directory);
+void *copyZones(struct inode file);

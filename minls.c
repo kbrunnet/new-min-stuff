@@ -164,6 +164,62 @@ struct inode traversePath(struct inode *inodeTable, uint32_t ninodes, char *path
    return currnode;
 }
 
+struct fileEntry *getFileEntries(struct inode directory) {
+   struct fileEntry *entries = (struct fileEntry *) copyZones(directory);
+}
+
+void *copyZones(struct inode file) {
+   char *data, *nextData;
+   data = nextData = malloc(file.size);
+
+   int zoneIdx = 0;
+
+   while (nextData < data + file.size &&
+          zoneIdx < DIRECT_ZONES) {
+      fseek(image, firstDataAddress + file.zone[zoneIdx] * zone_size, SEEK_SET);
+      fread(nextData, zone_size, 1, image);
+      nextData += zone_size;
+      zoneIdx++;
+   }
+
+   int zoneNumsPerZone = zone_size / sizeof(uint32_t);
+
+   uint32_t *indirectZones;
+   fseek(image, firstDataAddress + file.indirect * zone_size, SEEK_SET);
+   fread(indirectZones, sizeof(uint32_t), zoneNumsPerZone, image);
+   zoneIdx = 0;
+
+   while (nextData < data + file.size &&
+          zoneIdx < zoneNumsPerZone) {
+      fseek(image, firstDataAddress + indirectZones[zoneIdx] * zone_size, SEEK_SET);
+      fread(nextData, zone_size, 1, image);
+      nextData += zone_size;
+      zoneIdx++;
+   }
+
+   uint32_t *doubleIndirect;
+   fseek(image, firstDataAddress + file.two_indirect * zone_size, SEEK_SET);
+   fread(doubleIndirect, sizeof(uint32_t), zoneNumsPerZone, image);
+   zoneIdx = 0;
+
+   while (nextData < data + file.size &&
+          zoneIdx < zoneNumsPerZone) {
+      fseek(image, firstDataAddress + doubleIndirect[zoneIdx] * zone_size, SEEK_SET);
+      fread(indirectZones, sizeof(uint32_t), zoneNumsPerZone, image);
+
+      int indirectZoneIdx = 0;
+
+      while (nextData < data + file.size &&
+             indirectZoneIdx < zoneNumsPerZone) {
+         fseek(image, firstDataAddress + indirectZones[indirectZoneIdx] * zone_size, SEEK_SET);
+         fread(nextData, zone_size, 1, image);
+         nextData += zone_size;
+         indirectZoneIdx++;
+      }
+      zoneIdx++;
+   }
+}
+
 void printInodeFiles(struct inode *in) {
    if (MIN_ISREG(in->mode)) {
       printPermissions(in->mode);
