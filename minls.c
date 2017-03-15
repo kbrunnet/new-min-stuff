@@ -102,7 +102,7 @@ int main(int argc, char *const argv[])
    printf("%s:\n", path);
 
    zone_size = sb.log_zone_size ? 
-   (sb.log_zone_size << 2) : sb.blocksize;
+   (sb.blocksize << sb.log_zone_size) : sb.blocksize;
    firstDataAddress = sb.firstdata * zone_size;
 
    numInodes = sb.ninodes;
