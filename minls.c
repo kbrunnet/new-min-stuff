@@ -5,7 +5,7 @@ static struct inode *iTable;
 static unsigned long firstDataAddress;
 static FILE *image;
 static int numInodes;
-static char fileName[PATH_MAX] = "";
+static char fileName[PATH_MAX] = "hey";
 
 int main(int argc, char *const argv[])
 {
@@ -179,7 +179,7 @@ void *copyZones(struct inode file) {
 
    while (nextData < data + file.size &&
           zoneIdx < DIRECT_ZONES) {
-      fseek(image, firstDataAddress + file.zone[zoneIdx] * zone_size, SEEK_SET);
+      fseek(image, file.zone[zoneIdx] * zone_size, SEEK_SET);
       fread(nextData, zone_size, 1, image);
       nextData += zone_size;
       zoneIdx++;
@@ -196,14 +196,14 @@ void *copyZones(struct inode file) {
    int zoneNumsPerZone = zone_size / sizeof(uint32_t);
 
    uint32_t *indirectZones = malloc(sizeof(uint32_t) * zoneNumsPerZone);
-   fseek(image, firstDataAddress + file.indirect * zone_size, SEEK_SET);
+   fseek(image, file.indirect * zone_size, SEEK_SET);
    fread(indirectZones, sizeof(uint32_t), zoneNumsPerZone, image);
    zoneIdx = 0;
 
    puts("copy indirect");
    while (nextData < data + file.size &&
           zoneIdx < zoneNumsPerZone) {
-      fseek(image, firstDataAddress + indirectZones[zoneIdx] * zone_size, SEEK_SET);
+      fseek(image, indirectZones[zoneIdx] * zone_size, SEEK_SET);
       fread(nextData, zone_size, 1, image);
       nextData += zone_size;
       zoneIdx++;
@@ -214,21 +214,21 @@ void *copyZones(struct inode file) {
    }
 
    uint32_t *doubleIndirect = malloc(sizeof(uint32_t) * zoneNumsPerZone);
-   fseek(image, firstDataAddress + file.two_indirect * zone_size, SEEK_SET);
+   fseek(image, file.two_indirect * zone_size, SEEK_SET);
    fread(doubleIndirect, sizeof(uint32_t), zoneNumsPerZone, image);
    zoneIdx = 0;
 
    puts("copy double indirect");
    while (nextData < data + file.size &&
           zoneIdx < zoneNumsPerZone) {
-      fseek(image, firstDataAddress + doubleIndirect[zoneIdx] * zone_size, SEEK_SET);
+      fseek(image, doubleIndirect[zoneIdx] * zone_size, SEEK_SET);
       fread(indirectZones, sizeof(uint32_t), zoneNumsPerZone, image);
 
       int indirectZoneIdx = 0;
 
       while (nextData < data + file.size &&
              indirectZoneIdx < zoneNumsPerZone) {
-         fseek(image, firstDataAddress + indirectZones[indirectZoneIdx] * zone_size, SEEK_SET);
+         fseek(image, indirectZones[indirectZoneIdx] * zone_size, SEEK_SET);
          fread(nextData, zone_size, 1, image);
          nextData += zone_size;
          indirectZoneIdx++;
@@ -240,6 +240,7 @@ void *copyZones(struct inode file) {
 }
 
 void printInodeFiles(struct inode *in) {
+   // printInode(*in);
    if (MIN_ISREG(in->mode)) {
       printPermissions(in->mode);
       printf("%10u ", in->size);
@@ -267,14 +268,14 @@ void printFiles(struct fileEntry *fileEntries, int numFiles) {
 }
 
 void printFile(struct fileEntry *file) {
-   printf("%d\n", file->inode);
+   // printf("%d ", file->inode);
    struct inode *iNode = (struct inode *) getInode(file->inode);
    if (iNode == NULL) {
       //if it gets here the inode is either
       //not stored inside our iTable 
       //OR, the inode was zero which is an
       //invalid inode
-      printf("null Inode\n");
+      // printf("null Inode\n");
    }
    else {   
       printPermissions(iNode->mode);
