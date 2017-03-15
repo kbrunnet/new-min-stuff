@@ -66,6 +66,7 @@ int main(int argc, char *const argv[])
             path);
    */
 
+   // TODO: check for existing filename
    image = fopen(imagefile, "rb");
 
    /* Read the partition table */
@@ -122,7 +123,6 @@ int main(int argc, char *const argv[])
    // printf("\n");
    // printf("\n");
    // printf("\n");
-
    struct inode destFile = traversePath(iTable, sb.ninodes, path);
    // printf("INODE RETURNED: \n");
    printInodeFiles(&destFile);
@@ -166,11 +166,14 @@ struct inode traversePath(struct inode *inodeTable, uint32_t ninodes, char *path
 
 struct fileEntry *getFileEntries(struct inode directory) {
    struct fileEntry *entries = (struct fileEntry *) copyZones(directory);
+   puts("return from entries");
+   return entries;
 }
 
 void *copyZones(struct inode file) {
    char *data, *nextData;
-   data = nextData = malloc(file.size);
+   uint32_t dataSize = (((file.size - 1) / zone_size) + 1) * zone_size;
+   data = nextData = malloc(dataSize);
 
    int zoneIdx = 0;
 
@@ -181,14 +184,23 @@ void *copyZones(struct inode file) {
       nextData += zone_size;
       zoneIdx++;
    }
+   puts("done copying direct");
+
+   if (nextData >= data + file.size) {
+      puts("return");
+      return data;
+   }
+
+   puts("start copying indirect");
 
    int zoneNumsPerZone = zone_size / sizeof(uint32_t);
 
-   uint32_t *indirectZones;
+   uint32_t *indirectZones = malloc(sizeof(uint32_t) * zoneNumsPerZone);
    fseek(image, firstDataAddress + file.indirect * zone_size, SEEK_SET);
    fread(indirectZones, sizeof(uint32_t), zoneNumsPerZone, image);
    zoneIdx = 0;
 
+   puts("copy indirect");
    while (nextData < data + file.size &&
           zoneIdx < zoneNumsPerZone) {
       fseek(image, firstDataAddress + indirectZones[zoneIdx] * zone_size, SEEK_SET);
@@ -197,11 +209,16 @@ void *copyZones(struct inode file) {
       zoneIdx++;
    }
 
-   uint32_t *doubleIndirect;
+   if (nextData >= data + file.size) {
+      return data;
+   }
+
+   uint32_t *doubleIndirect = malloc(sizeof(uint32_t) * zoneNumsPerZone);
    fseek(image, firstDataAddress + file.two_indirect * zone_size, SEEK_SET);
    fread(doubleIndirect, sizeof(uint32_t), zoneNumsPerZone, image);
    zoneIdx = 0;
 
+   puts("copy double indirect");
    while (nextData < data + file.size &&
           zoneIdx < zoneNumsPerZone) {
       fseek(image, firstDataAddress + doubleIndirect[zoneIdx] * zone_size, SEEK_SET);
@@ -218,6 +235,8 @@ void *copyZones(struct inode file) {
       }
       zoneIdx++;
    }
+
+   return data;
 }
 
 void printInodeFiles(struct inode *in) {
@@ -230,12 +249,10 @@ void printInodeFiles(struct inode *in) {
 
    if (MIN_ISDIR(in->mode)) {
       struct fileEntry *fileEntries = getFileEntries(*in);
+      puts("back");
       int numFiles = in->size/sizeof(struct fileEntry);
-      // for (i = 0; i < numFiles; i++) {
-      if (in->zone[i]) {
-         printFiles(fileEntries + i, numFiles);
-      }
-      // }
+      printf("numfiles: %d\n", numFiles);
+      printFiles(fileEntries, numFiles);
    }
 }
 
@@ -243,7 +260,9 @@ void printFiles(struct fileEntry *fileEntries, int numFiles) {
    int i;
    for(i = 0; i < numFiles; i++) {
       // printf("%u\n", fileEntries[i].inode);
-      printFile(&fileEntries[i]);
+      if (fileEntries[i].inode) {
+         printFile(&fileEntries[i]);
+      }
    }
 }
 
