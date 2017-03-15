@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <linux/limits.h>
 
 /* constants */
 #define PTABLE_OFFSET 0x1BE
