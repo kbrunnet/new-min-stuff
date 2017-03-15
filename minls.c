@@ -4,6 +4,7 @@ static unsigned int zone_size;
 static struct inode *iTable;
 static unsigned long firstDataAddress;
 static FILE *image;
+static int numInodes;
 
 int main(int argc, char *const argv[])
 {
@@ -82,7 +83,7 @@ int main(int argc, char *const argv[])
    uint16_t *ptValid = malloc(sizeof(uint16_t));
    fread(ptValid, sizeof(uint16_t), 1, image);
    if (*ptValid != 0xAA55) {
-      printf("not a valid partition table\n");
+      // printf("not a valid partition table\n");
    }
 
    /* Read the superblock */
@@ -93,21 +94,27 @@ int main(int argc, char *const argv[])
 
    // printSuperblock(sb);
 
-   // if (sb.magic != 0x4D5A) {
-   //    printf("invalid superblock, magic number must be 0x4D5A");
-   //    // (EXIT_FAILURE);
-   // }
+   if (sb.magic != 0x4D5A) {
+      fprintf(stderr, "Bad magic number. (0x%x)\nThis doesn't look like a MINIX filesystem.\n",
+         sb.magic);
+      exit(EXIT_FAILURE);
+   }
+   printf("%s:\n", path);
 
-   unsigned int zone_size = sb.log_zone_size ? 
-      (sb.log_zone_size << 2) : sb.blocksize;
+   zone_size = sb.log_zone_size ? 
+   (sb.log_zone_size << 2) : sb.blocksize;
    firstDataAddress = sb.firstdata * zone_size;
+
+   numInodes = sb.ninodes;
 
    /* Read the root directory table */
    fseek(image, (2 + sb.i_blocks + sb.z_blocks) * sb.blocksize, SEEK_SET);
-   struct inode iTable[sb.ninodes];
-   fread(iTable, sizeof(struct inode), sb.ninodes, image);
-
    traversePath(iTable, sb.ninodes, path);
+
+   iTable = (struct inode*) malloc(numInodes * sizeof(struct inode));
+   fread(iTable, sizeof(struct inode), numInodes, image);
+
+   printInodeFiles(iTable);
    
    exit(EXIT_SUCCESS);
 }
@@ -134,7 +141,6 @@ struct inode traversePath(struct inode *inodeTable, uint32_t ninodes, char *path
              currEntry < fileEntries + numFiles) {
          currEntry++;
       }
-
       if (currEntry == fileEntries + numFiles) {
          fprintf(stderr, "File does not exist: %s\n", file);
          exit(EXIT_FAILURE);
@@ -152,6 +158,24 @@ struct inode traversePath(struct inode *inodeTable, uint32_t ninodes, char *path
    return currnode;
 }
 
+void printInodeFiles(struct inode *in) {
+   int i;
+   for (i = 0; i < DIRECT_ZONES; i++) {
+      int zoneNum = in->zone[i];
+      if (zoneNum) {
+         unsigned long addrZone = zone_size * zoneNum;
+         int numFiles = in->size/sizeof(struct fileEntry);
+         fseek(image, addrZone, SEEK_SET);
+
+         struct fileEntry fileEntries[numFiles];
+         fread(fileEntries, sizeof(struct fileEntry), numFiles, image);
+         
+         printFiles(fileEntries, numFiles);
+
+      }
+   }
+}
+
 void printFiles(struct fileEntry *fileEntries, int numFiles) {
    int i;
    for(i = 0; i < numFiles; i++) {
@@ -160,8 +184,50 @@ void printFiles(struct fileEntry *fileEntries, int numFiles) {
 }
 
 void printFile(struct fileEntry *file) {
-   printf("%d: ", file->inode);
-   printf("%s\n", file->name);
+   struct inode *iNode = (struct inode *) getInode(file->inode);
+   if (iNode == NULL) {
+      //if it gets here the inode is either
+      //not stored inside our iTable 
+      //OR, the inode was zero which is an
+      //invalid inode
+   }
+   else {   
+      printPermissions(iNode->mode);
+      printf("%10u ", iNode->size);
+      printf("%s\n", file->name);
+   }
+}
+
+void printPermissions(uint16_t mode) {
+   printSinglePerm(MIN_ISDIR(mode), 'd');
+   printSinglePerm(mode & MIN_IRUSR, 'r');
+   printSinglePerm(mode & MIN_IWUSR, 'w');
+   printSinglePerm(mode & MIN_IXUSR, 'x');
+   printSinglePerm(mode & MIN_IRGRP, 'r');
+   printSinglePerm(mode & MIN_IWGRP, 'w');
+   printSinglePerm(mode & MIN_IXGRP, 'x');
+   printSinglePerm(mode & MIN_IROTH, 'r');
+   printSinglePerm(mode & MIN_IWOTH, 'w');
+   printSinglePerm(mode & MIN_IXOTH, 'x');
+}
+
+void printSinglePerm(int print, char c) {
+   if (print) {
+      printf("%c", c);
+   }
+   else {
+      printf("-");
+   }
+}
+
+void *getInode(int inodeNum) {
+   if (inodeNum == 0) {
+      return NULL;
+   }
+   if (inodeNum > numInodes) {
+      return NULL;
+   }
+   return &iTable[inodeNum - 1];
 }
 
 void printPartition(struct part_entry  partitionPtr) {
