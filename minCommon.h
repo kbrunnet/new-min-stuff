@@ -10,11 +10,11 @@
 #define PMAGIC510 0x55
 #define PMAGIC511 0xAA
 #define MINIXPART 0x81
-#define MIN_MAGIC 0x4d5a /* the minix magic number */
-#define MIN_MAGIC_REV 0x5a4d /* the minix magic number reversed\
-#define MIN_MAGIC OLD 0x2468 /* the v2 minix magic number */
-#define MIN_MAGIC_REV_OLD 0x6824 /* the v2 magic number reversed\
-* we have an endian problem */
+#define MIN_MAGIC 0x4d5a         /* the minix magic number */
+#define MIN_MAGIC_REV 0x5a4d     /* the minix magic number reversed */
+#define MIN_MAGIC_OLD 0x2468     /* the v2 minix magic number */
+#define MIN_MAGIC_REV_OLD 0x6824 /* the v2 magic number reversed */
+                                 /* we have an endian problem */
 #define MIN_ISREG(m) (((m)&0170000)==0100000)
 #define MIN_ISDIR(m) (((m)&0170000)==0040000)
 #define MIN_IRUSR 0400
@@ -26,6 +26,11 @@
 #define MIN_IROTH 0004
 #define MIN_IWOTH 0002
 #define MIN_IXOTH 0001
+
+unsigned int zone_size;
+struct inode *iTable;
+FILE *image;
+int numInodes;
 
 struct part_entry {
    unsigned char bootind;      /* boot indicator 0/ACTIVE_FLAG   */
@@ -94,3 +99,8 @@ struct fileEntry {
    uint32_t inode;
    char name[DIRSIZ];
 };
+
+struct inode traversePath(struct inode *root, unsigned int ninodes, char *path);
+struct fileEntry *getFileEntries(struct inode directory);
+void *getInode(int inodeNum);
+void *copyZones(struct inode file);

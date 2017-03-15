@@ -1,6 +1,8 @@
 #include "minCommon.h"
 
-struct inode traversePath(struct inode *root, unsigned int ninodes, char *path);
+static char fileName[PATH_MAX] = "";
+static unsigned long firstDataAddress;
+
 void printPartition(struct part_entry partitionPtr);
 void printSuperblock(struct superblock sb);
 void printFile(struct fileEntry *file);
@@ -9,6 +11,3 @@ void printInode(struct inode in);
 void printInodeFiles(struct inode *in);
 void printPermissions(uint16_t mode);
 void printSinglePerm(int print, char c);
-void *getInode(int inodeNum);
-struct fileEntry *getFileEntries(struct inode directory);
-void *copyZones(struct inode file);
