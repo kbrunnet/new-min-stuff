@@ -142,9 +142,8 @@ struct inode traversePath(struct inode *inodeTable, uint32_t ninodes, char *path
    
    while (file) {
       int numFiles = currnode.size / sizeof(struct fileEntry);
-      fseek(image, currnode.zone[0] * zone_size, SEEK_SET);
-      struct fileEntry fileEntries[numFiles];
-      fread(fileEntries, sizeof(struct fileEntry), numFiles, image);
+      struct fileEntry *fileEntries;
+      fileEntries = getFileEntries(currnode);
 
       struct fileEntry *currEntry = fileEntries;
       while (strcmp(currEntry->name, file) && 
