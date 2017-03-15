@@ -50,9 +50,7 @@ int main(int argc, char *const argv[])
       strcpy(path, "/");
    }
    if (path[0] != '/') {
-      char pathBase[PATH_MAX] = "";
-      getcwd(pathBase, PATH_MAX);
-      strcat(pathBase, "/");
+      char pathBase[PATH_MAX] = "/";
       strcat(pathBase, path);
       strcpy(path, pathBase);
    }
@@ -100,7 +98,6 @@ int main(int argc, char *const argv[])
          sb.magic);
       exit(EXIT_FAILURE);
    }
-   printf("%s:\n", path);
 
    zone_size = sb.log_zone_size ? 
    (sb.blocksize << sb.log_zone_size) : sb.blocksize;
@@ -165,7 +162,6 @@ struct inode traversePath(struct inode *inodeTable, uint32_t ninodes, char *path
 
 struct fileEntry *getFileEntries(struct inode directory) {
    struct fileEntry *entries = (struct fileEntry *) copyZones(directory);
-   puts("return from entries");
    return entries;
 }
 
@@ -183,14 +179,11 @@ void *copyZones(struct inode file) {
       nextData += zone_size;
       zoneIdx++;
    }
-   puts("done copying direct");
 
    if (nextData >= data + file.size) {
-      puts("return");
       return data;
    }
 
-   puts("start copying indirect");
 
    int zoneNumsPerZone = zone_size / sizeof(uint32_t);
 
@@ -199,7 +192,6 @@ void *copyZones(struct inode file) {
    fread(indirectZones, sizeof(uint32_t), zoneNumsPerZone, image);
    zoneIdx = 0;
 
-   puts("copy indirect");
    while (nextData < data + file.size &&
           zoneIdx < zoneNumsPerZone) {
       fseek(image, indirectZones[zoneIdx] * zone_size, SEEK_SET);
@@ -217,7 +209,6 @@ void *copyZones(struct inode file) {
    fread(doubleIndirect, sizeof(uint32_t), zoneNumsPerZone, image);
    zoneIdx = 0;
 
-   puts("copy double indirect");
    while (nextData < data + file.size &&
           zoneIdx < zoneNumsPerZone) {
       fseek(image, doubleIndirect[zoneIdx] * zone_size, SEEK_SET);
@@ -249,7 +240,6 @@ void printInodeFiles(struct inode *in) {
 
    if (MIN_ISDIR(in->mode)) {
       struct fileEntry *fileEntries = getFileEntries(*in);
-      puts("back");
       int numFiles = in->size/sizeof(struct fileEntry);
       printf("numfiles: %d\n", numFiles);
       printFiles(fileEntries, numFiles);
