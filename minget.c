@@ -67,6 +67,7 @@ int main(int argc, char *const argv[])
 	else {
 		if (MIN_ISREG(destFile.mode)) {
 	   	fprintf(stdout, "%s", data);
+         exit(EXIT_FAILURE);
 	   }
 		else {
 			fprintf(stdout, 

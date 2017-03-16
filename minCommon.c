@@ -160,9 +160,16 @@ struct inode traversePath(struct inode *inodeTable,
    // printf("here\n");
    struct inode currnode = inodeTable[0];
 
+   char *nextFile;
    char *file = strtok(path, "/");
    
    while (file) {
+      nextFile = strtok(NULL, "/");
+
+      if (!MIN_ISDIR(currnode.mode)) {
+         fprintf(stderr, "not a directory\n");
+         exit(EXIT_FAILURE);
+      }
       int numFiles = currnode.size / sizeof(struct fileEntry);
       struct fileEntry *fileEntries;
       fileEntries = getFileEntries(currnode);
@@ -179,7 +186,7 @@ struct inode traversePath(struct inode *inodeTable,
       }
       currnode = *(struct inode *)getInode(currEntry->inode);
 
-      file = strtok(NULL, "/");
+      file = nextFile;
    }
 
    return currnode;
@@ -203,7 +210,8 @@ void *getInode(int inodeNum) {
 
 void *copyZones(struct inode file) {
    char *data, *nextData;
-   uint32_t dataSize = (((file.size - 1) / zone_size) + 1) * zone_size;
+   // uint32_t dataSize = (((file.size - 1) / zone_size) + 1) * zone_size;
+   uint32_t dataSize = file.size;
    data = nextData = malloc(dataSize);
 
    int zoneIdx = 0;
@@ -211,14 +219,16 @@ void *copyZones(struct inode file) {
    while (nextData < data + file.size &&
           zoneIdx < DIRECT_ZONES) {
       uint32_t zoneNum = file.zone[zoneIdx];
+      uint32_t readSize = nextData + zone_size > data + dataSize ?
+                          data + dataSize - nextData : zone_size;
       if (zoneNum) {
          fseekPartition(image, zoneNum * zone_size, SEEK_SET);
-         fread(nextData, zone_size, 1, image);
+         fread(nextData, readSize, 1, image);
       }
       else {
-         memset(nextData, 0, zone_size);
+         memset(nextData, 0, readSize);
       }
-      nextData += zone_size;
+      nextData += readSize;
       zoneIdx++;
    }
 
@@ -237,14 +247,16 @@ void *copyZones(struct inode file) {
    while (nextData < data + file.size &&
           zoneIdx < zoneNumsPerZone) {
       uint32_t zoneNum = indirectZones[zoneIdx];
+      uint32_t readSize = nextData + zone_size > data + dataSize ?
+                          data + dataSize - nextData : zone_size;
       if (zoneNum) {
          fseekPartition(image, zoneNum * zone_size, SEEK_SET);
-         fread(nextData, zone_size, 1, image);
+         fread(nextData, readSize, 1, image);
       }
       else {
-         memset(nextData, 0, zone_size);
+         memset(nextData, 0, readSize);
       }
-      nextData += zone_size;
+      nextData += readSize;
       zoneIdx++;
    }
 
@@ -267,14 +279,16 @@ void *copyZones(struct inode file) {
       while (nextData < data + file.size &&
              indirectZoneIdx < zoneNumsPerZone) {
          uint32_t zoneNum = indirectZones[indirectZoneIdx];
+         uint32_t readSize = nextData + zone_size > data + dataSize ?
+                             data + dataSize - nextData : zone_size;
          if (zoneNum) {
             fseekPartition(image, zoneNum * zone_size, SEEK_SET);
-            fread(nextData, zone_size, 1, image);
+            fread(nextData, readSize, 1, image);
          }  
          else {
-            memset(nextData, 0, zone_size);
+            memset(nextData, 0, readSize);
          }
-         nextData += zone_size;
+         nextData += readSize;
          indirectZoneIdx++;
       }
       zoneIdx++;
