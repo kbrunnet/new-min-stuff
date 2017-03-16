@@ -21,49 +21,16 @@ int main(int argc, char *const argv[])
             path);
    */
 
-   // TODO: check for existing filename
-   image = fopen(options.imagefile, "rb");
+   struct minixConfig config;
+   config.image = NULL;
 
-   /* Read the partition table */
-   fseek(image, 0x1BE, SEEK_SET);
-
-   struct part_entry partition_table[4];
-   fread(partition_table, sizeof(struct part_entry), 4, image);
-
-   // for (i = 0; i < 4; i++) {
-   //    printf("i: %d\n", i);
-   //    printPartition(partition_table[i]);
-   // }
-
-   /* TODO: f -p is set */
-   uint16_t *ptValid = malloc(sizeof(uint16_t));
-   fread(ptValid, sizeof(uint16_t), 1, image);
-   if (*ptValid != 0xAA55) {
-      // printf("not a valid partition table\n");
-   }
-
-   /* Read the superblock */
-   fseek(image, 1024, SEEK_SET);
-
-   struct superblock sb;
-   fread(&sb, sizeof(struct superblock), 1, image);
-
-   // printSuperblock(sb);
-
-   if (sb.magic != 0x4D5A) {
-      fprintf(stderr, "Bad magic number. (0x%x)\nThis doesn't look like a MINIX filesystem.\n",
-         sb.magic);
-      exit(EXIT_FAILURE);
-   }
-   zone_size = sb.log_zone_size ? 
-   (sb.blocksize << sb.log_zone_size) : sb.blocksize;
-   printf("zone size when set: %d\n", zone_size);
-   firstDataAddress = sb.firstdata * zone_size;
-
-   numInodes = sb.ninodes;
+   getMinixConfig(options, &config);
+   image = config.image;
+   zone_size = config.zone_size;
+   numInodes = config.sb.ninodes;
 
    /* Read the root directory table */
-   fseek(image, (2 + sb.i_blocks + sb.z_blocks) * sb.blocksize, SEEK_SET);
+   fseek(image, (2 + config.sb.i_blocks + config.sb.z_blocks) * config.sb.blocksize, SEEK_SET);
 
    iTable = (struct inode*) malloc(numInodes * sizeof(struct inode));
    fread(iTable, sizeof(struct inode), numInodes, image);
@@ -77,7 +44,7 @@ int main(int argc, char *const argv[])
    // printf("\n");
    // printf("\n");
    // printf("\n");
-   struct inode destFile = traversePath(iTable, sb.ninodes, options.path);
+   struct inode destFile = traversePath(iTable, config.sb.ninodes, options.path);
    // printf("INODE RETURNED: \n");
    printInodeFiles(&destFile);
 
@@ -95,7 +62,6 @@ void printInodeFiles(struct inode *in) {
    if (MIN_ISDIR(in->mode)) {
       struct fileEntry *fileEntries = getFileEntries(*in);
       int numFiles = in->size/sizeof(struct fileEntry);
-      printf("numfiles: %d\n", numFiles);
       printFiles(fileEntries, numFiles);
    }
 }

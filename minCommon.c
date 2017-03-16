@@ -42,6 +42,43 @@ void parseArgs(int argc, char *const argv[], struct minOptions *options) {
    }
 }
 
+void getMinixConfig(struct minOptions options, struct minixConfig *config) {
+   // TODO: check for existing filename
+   config->image = fopen(options.imagefile, "rb");
+
+   /* Read the partition table */
+   fseek(config->image, 0x1BE, SEEK_SET);
+
+   fread(config->partition_table, sizeof(struct part_entry), 4, config->image);
+
+   // for (i = 0; i < 4; i++) {
+   //    printf("i: %d\n", i);
+   //    printPartition(partition_table[i]);
+   // }
+
+   /* TODO: f -p is set */
+   uint16_t *ptValid = malloc(sizeof(uint16_t));
+   fread(ptValid, sizeof(uint16_t), 1, config->image);
+   if (*ptValid != 0xAA55) {
+      // printf("not a valid partition table\n");
+   }
+
+   /* Read the superblock */
+   fseek(config->image, 1024, SEEK_SET);
+
+   fread(&(config->sb), sizeof(struct superblock), 1, config->image);
+
+   // printSuperblock(sb);
+
+   if (config->sb.magic != 0x4D5A) {
+      fprintf(stderr, "Bad magic number. (0x%x)\nThis doesn't look like a MINIX filesystem.\n",
+         config->sb.magic);
+      exit(EXIT_FAILURE);
+   }
+   config->zone_size = config->sb.log_zone_size ? 
+   (config->sb.blocksize << config->sb.log_zone_size) : config->sb.blocksize;
+}
+
 /* 
  * Takes the root inode and an absolute path, and returns the inode 
  * of the requested file or directory.
@@ -93,10 +130,7 @@ void *getInode(int inodeNum) {
 
 void *copyZones(struct inode file) {
    char *data, *nextData;
-   puts("here");
-   printf("zone size when used: %d\n", zone_size);
    uint32_t dataSize = (((file.size - 1) / zone_size) + 1) * zone_size;
-   puts("not here");
    data = nextData = malloc(dataSize);
 
    int zoneIdx = 0;

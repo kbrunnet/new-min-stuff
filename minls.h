@@ -1,7 +1,6 @@
 #include "minCommon.h"
 
 static char fileName[PATH_MAX] = "";
-static unsigned long firstDataAddress;
 
 void printPartition(struct part_entry partitionPtr);
 void printSuperblock(struct superblock sb);

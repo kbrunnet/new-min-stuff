@@ -108,7 +108,15 @@ struct minOptions {
    char *path;
 };
 
+struct minixConfig {
+   FILE *image;
+   struct part_entry partition_table[4];
+   struct superblock sb;
+   unsigned int zone_size;
+};
+
 void parseArgs(int argc, char *const argv[], struct minOptions *options);
+void getMinixConfig(struct minOptions options, struct minixConfig *config);
 struct inode traversePath(struct inode *root, unsigned int ninodes, char *path);
 struct fileEntry *getFileEntries(struct inode directory);
 void *getInode(int inodeNum);
