@@ -10,18 +10,10 @@ int main(int argc, char *const argv[])
    options.subpartition = -1;
    options.imagefile = malloc(NAME_MAX);
    options.path = malloc(PATH_MAX);
+   options.fullPath = malloc(PATH_MAX);
 
    parseArgs(argc, argv, &options);
-   strcpy(fullPath, options.path);
-
-   /*
-   printf("verbose: %d\npartition: %d\nsubpartition:%d\nimagefile:%s\npath:%s\n",
-            verbose,
-            partition,
-            subpartition,
-            imagefile,
-            path);
-   */
+   strcpy(fullPath, options.fullPath);
 
    struct minixConfig config;
    config.image = NULL;
@@ -46,7 +38,8 @@ int main(int argc, char *const argv[])
    // printf("\n");
    // printf("\n");
    // printf("\n");
-   struct inode destFile = traversePath(iTable, config.sb.ninodes, options.path);
+   struct inode destFile = traversePath(iTable, 
+   	config.sb.ninodes, options.path);
    // printf("INODE RETURNED: \n");
    // printInodeFiles(&destFile);
 

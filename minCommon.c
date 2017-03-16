@@ -2,6 +2,7 @@
 
 static uint32_t partitionOffset = 0;
 static uint32_t partitionSize = -1;
+char fullPathName[PATH_MAX] = "";
 
 void parseArgs(int argc, char *const argv[], struct minOptions *options) {
    int opt;
@@ -21,7 +22,8 @@ void parseArgs(int argc, char *const argv[], struct minOptions *options) {
          break;
 
          default:
-            fprintf(stderr, "Usage: minls [ -v ] [ -p part [ -s subpart ] ] imagefile [ path ]\n");
+            fprintf(stderr, "Usage: minls [ -v ] [ -p \
+               part [ -s subpart ] ] imagefile [ path ]\n");
             exit(EXIT_FAILURE);
       }
    }
@@ -29,11 +31,13 @@ void parseArgs(int argc, char *const argv[], struct minOptions *options) {
       strcpy(options->imagefile, argv[optind]);
    }
    else {
-      fprintf(stderr, "Usage: minls [ -v ] [ -p part [ -s subpart ] ] imagefile [ path ]\n");
+      fprintf(stderr, "Usage: minls [ -v ] [ -p part \
+         [ -s subpart ] ] imagefile [ path ]\n");
    }
    optind++;
    if (optind < argc) {
       strcpy(options->path, argv[optind]);
+      strcpy(options->fullPath, options->path);
    }
    else {
       strcpy(options->path, "/");
@@ -43,6 +47,7 @@ void parseArgs(int argc, char *const argv[], struct minOptions *options) {
       strcat(pathBase, options->path);
       strcpy(options->path, pathBase);
    }
+   strcpy(fullPathName, options->path);
 }
 
 void getMinixConfig(struct minOptions options, struct minixConfig *config) {
@@ -90,7 +95,8 @@ void getMinixConfig(struct minOptions options, struct minixConfig *config) {
    // printSuperblock(sb);
 
    if (config->sb.magic != 0x4D5A) {
-      fprintf(stderr, "Bad magic number. (0x%x)\nThis doesn't look like a MINIX filesystem.\n",
+      fprintf(stderr, "Bad magic number. (0x%x)\nThis doesn't \
+         look like a MINIX filesystem.\n",
          config->sb.magic);
       exit(EXIT_FAILURE);
    }
@@ -102,7 +108,8 @@ void getMinixConfig(struct minOptions options, struct minixConfig *config) {
  * Takes the root inode and an absolute path, and returns the inode 
  * of the requested file or directory.
  */
-struct inode traversePath(struct inode *inodeTable, uint32_t ninodes, char *path) {
+struct inode traversePath(struct inode *inodeTable, 
+   uint32_t ninodes, char *path) {
    // printf("here\n");
    struct inode currnode = inodeTable[0];
 
@@ -120,7 +127,7 @@ struct inode traversePath(struct inode *inodeTable, uint32_t ninodes, char *path
       }
 
       if (currEntry >= fileEntries + numFiles) {
-         // fprintf(stderr, "%s: File not found.\n", file);
+         fprintf(stderr, "%s: File not found.\n", fullPathName);
          exit(EXIT_FAILURE);
       }
       currnode = *(struct inode *)getInode(currEntry->inode);

@@ -117,7 +117,8 @@ struct minixConfig {
 
 void parseArgs(int argc, char *const argv[], struct minOptions *options);
 void getMinixConfig(struct minOptions options, struct minixConfig *config);
-struct inode traversePath(struct inode *root, unsigned int ninodes, char *path);
+struct inode traversePath(struct inode *root, 
+   unsigned int ninodes, char *path);
 struct fileEntry *getFileEntries(struct inode directory);
 void *getInode(int inodeNum);
 void *copyZones(struct inode file);
