@@ -1,5 +1,8 @@
 #include "minCommon.h"
 
+static uint32_t partitionOffset = 0;
+static uint32_t partitionSize = -1;
+
 void parseArgs(int argc, char *const argv[], struct minOptions *options) {
    int opt;
 
@@ -46,25 +49,41 @@ void getMinixConfig(struct minOptions options, struct minixConfig *config) {
    // TODO: check for existing filename
    config->image = fopen(options.imagefile, "rb");
 
-   /* Read the partition table */
-   fseek(config->image, 0x1BE, SEEK_SET);
+   if (options.partition >= 0) {
+      /* Read the partition table */
+      fseekPartition(config->image, 0x1BE, SEEK_SET);
 
-   fread(config->partition_table, sizeof(struct part_entry), 4, config->image);
+      struct part_entry partition_table[4];
+      fread(partition_table, sizeof(struct part_entry), 4, config->image);
 
-   // for (i = 0; i < 4; i++) {
-   //    printf("i: %d\n", i);
-   //    printPartition(partition_table[i]);
-   // }
+      // for (i = 0; i < 4; i++) {
+      //    printf("i: %d\n", i);
+      //    printPartition(partition_table[i]);
+      // }
 
-   /* TODO: f -p is set */
-   uint16_t *ptValid = malloc(sizeof(uint16_t));
-   fread(ptValid, sizeof(uint16_t), 1, config->image);
-   if (*ptValid != 0xAA55) {
-      // printf("not a valid partition table\n");
+      uint16_t *ptValid = malloc(sizeof(uint16_t));
+      fread(ptValid, sizeof(uint16_t), 1, config->image);
+      if (*ptValid != 0xAA55) {
+         fprintf(stderr, "not a valid partition table (%X)\n", *ptValid);
+         exit(EXIT_FAILURE);
+      }
+
+      struct part_entry *partition = partition_table + options.partition;
+      // if (partition->bootind != 0x80) {
+      //    fprintf(stderr, "Invalid partition entry\n");
+      //    exit(EXIT_FAILURE);
+      //    printf("doesn't look like minix: %X\n", partition->bootind);
+      // }
+      if (partition->sysind != 0x81) {
+         fprintf(stderr, "Not a MINIX partition\n");
+         exit(EXIT_FAILURE);
+      }
+      partitionOffset = partition->lowsec * 512;
+      partitionSize = partition->size;
    }
 
    /* Read the superblock */
-   fseek(config->image, 1024, SEEK_SET);
+   fseekPartition(config->image, 1024, SEEK_SET);
 
    fread(&(config->sb), sizeof(struct superblock), 1, config->image);
 
@@ -139,7 +158,7 @@ void *copyZones(struct inode file) {
           zoneIdx < DIRECT_ZONES) {
       uint32_t zoneNum = file.zone[zoneIdx];
       if (zoneNum) {
-         fseek(image, zoneNum * zone_size, SEEK_SET);
+         fseekPartition(image, zoneNum * zone_size, SEEK_SET);
          fread(nextData, zone_size, 1, image);
       }
       else {
@@ -157,7 +176,7 @@ void *copyZones(struct inode file) {
    int zoneNumsPerZone = zone_size / sizeof(uint32_t);
 
    uint32_t *indirectZones = malloc(sizeof(uint32_t) * zoneNumsPerZone);
-   fseek(image, file.indirect * zone_size, SEEK_SET);
+   fseekPartition(image, file.indirect * zone_size, SEEK_SET);
    fread(indirectZones, sizeof(uint32_t), zoneNumsPerZone, image);
    zoneIdx = 0;
 
@@ -165,7 +184,7 @@ void *copyZones(struct inode file) {
           zoneIdx < zoneNumsPerZone) {
       uint32_t zoneNum = indirectZones[zoneIdx];
       if (zoneNum) {
-         fseek(image, zoneNum * zone_size, SEEK_SET);
+         fseekPartition(image, zoneNum * zone_size, SEEK_SET);
          fread(nextData, zone_size, 1, image);
       }
       else {
@@ -180,13 +199,13 @@ void *copyZones(struct inode file) {
    }
 
    uint32_t *doubleIndirect = malloc(sizeof(uint32_t) * zoneNumsPerZone);
-   fseek(image, file.two_indirect * zone_size, SEEK_SET);
+   fseekPartition(image, file.two_indirect * zone_size, SEEK_SET);
    fread(doubleIndirect, sizeof(uint32_t), zoneNumsPerZone, image);
    zoneIdx = 0;
 
    while (nextData < data + file.size &&
           zoneIdx < zoneNumsPerZone) {
-      fseek(image, doubleIndirect[zoneIdx] * zone_size, SEEK_SET);
+      fseekPartition(image, doubleIndirect[zoneIdx] * zone_size, SEEK_SET);
       fread(indirectZones, sizeof(uint32_t), zoneNumsPerZone, image);
 
       int indirectZoneIdx = 0;
@@ -195,7 +214,7 @@ void *copyZones(struct inode file) {
              indirectZoneIdx < zoneNumsPerZone) {
          uint32_t zoneNum = indirectZones[indirectZoneIdx];
          if (zoneNum) {
-            fseek(image, zoneNum * zone_size, SEEK_SET);
+            fseekPartition(image, zoneNum * zone_size, SEEK_SET);
             fread(nextData, zone_size, 1, image);
          }  
          else {
@@ -208,4 +227,13 @@ void *copyZones(struct inode file) {
    }
 
    return data;
+}
+
+size_t fseekPartition(FILE *stream, long int offset, int whence) {
+   if (partitionSize > -1 && offset > partitionSize) {
+      fprintf(stderr, "Attempting to seek outside of partition\n");
+      exit(EXIT_FAILURE);
+   }
+   // fprintf(stderr, "seeking with partition: %d\n", partitionOffset);
+   return fseek(stream, offset + partitionOffset, whence);
 }
