@@ -11,8 +11,10 @@ int main(int argc, char *const argv[])
    options.imagefile = malloc(NAME_MAX);
    options.path = malloc(PATH_MAX);
    options.fullPath = malloc(PATH_MAX);
+   options.destFile = malloc(PATH_MAX);
+   options.hasDestFile = 0;
 
-   parseArgs(argc, argv, &options);
+   parseArgs(argc, argv, &options, IS_MINGET);
    strcpy(fullPath, options.fullPath);
 
    struct minixConfig config;
@@ -24,7 +26,8 @@ int main(int argc, char *const argv[])
    numInodes = config.sb.ninodes;
 
    /* Read the root directory table */
-   fseekPartition(image, (2 + config.sb.i_blocks + config.sb.z_blocks) * config.sb.blocksize, SEEK_SET);
+   fseekPartition(image, (2 + config.sb.i_blocks + 
+   	config.sb.z_blocks) * config.sb.blocksize, SEEK_SET);
 
    iTable = (struct inode*) malloc(numInodes * sizeof(struct inode));
    fread(iTable, sizeof(struct inode), numInodes, image);
@@ -43,13 +46,33 @@ int main(int argc, char *const argv[])
    // printf("INODE RETURNED: \n");
    // printInodeFiles(&destFile);
 
-   char *data = copyZones(destFile);
-   if (MIN_ISREG(destFile.mode)) {
-   	printf("%s\n", data);
-   }
-   else {
-   	printf("%s: Not a regular file\n", fullPath);
-   }
+	char *data = copyZones(destFile);
+	if (options.hasDestFile == HAS_DESTFILE) {
+		FILE *writeToThisFile = fopen(options.destFile, "w");
+   	if (writeToThisFile == NULL) {
+   		printf("Can't write to this file!\n");
+   	}
+   	else {
+		   if (MIN_ISREG(destFile.mode)) {
+		   	fprintf(writeToThisFile, "%s", data);
+		   }
+			else {
+				fprintf(writeToThisFile,
+					"%s: Not a regular file\n", 
+					fullPath);	
+			}
+   	}
+	}
+	else {
+		if (MIN_ISREG(destFile.mode)) {
+	   	fprintf(stdout, "%s", data);
+	   }
+		else {
+			fprintf(stdout, 
+				"%s: Not a regular file\n",
+				fullPath);	
+		}
+	}
 
    exit(EXIT_SUCCESS);
 }

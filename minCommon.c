@@ -1,10 +1,10 @@
 #include "minCommon.h"
-
 static uint32_t partitionOffset = 0;
 static uint32_t partitionSize = -1;
 char fullPathName[PATH_MAX] = "";
 
-void parseArgs(int argc, char *const argv[], struct minOptions *options) {
+void parseArgs(int argc, char *const argv[], 
+   struct minOptions *options, int whichProgram) {
    int opt;
 
    while ((opt = getopt(argc, argv, "vp:s:")) != -1) {
@@ -48,6 +48,14 @@ void parseArgs(int argc, char *const argv[], struct minOptions *options) {
       strcpy(options->path, pathBase);
    }
    strcpy(fullPathName, options->path);
+
+   if (whichProgram == IS_MINGET) {
+      optind++;
+      if (optind < argc) {
+         options->hasDestFile = HAS_DESTFILE;
+         strcpy(options->destFile, argv[optind]);
+      }
+   }
 }
 
 void getMinixConfig(struct minOptions options, struct minixConfig *config) {

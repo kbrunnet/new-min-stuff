@@ -27,22 +27,26 @@
 #define MIN_IWOTH 0002
 #define MIN_IXOTH 0001
 
+#define IS_MINLS 1
+#define IS_MINGET 0
+#define HAS_DESTFILE 1
+
 unsigned int zone_size;
 struct inode *iTable;
 FILE *image;
 int numInodes;
 
 struct part_entry {
-   uint8_t bootind;      /* boot indicator 0/ACTIVE_FLAG   */
-   uint8_t start_head;   /* head value for first sector    */
-   uint8_t start_sec;    /* sector value + cyl bits for first sector */
-   uint8_t start_cyl;    /* track value for first sector   */
-   uint8_t sysind;       /* system indicator      */
-   uint8_t last_head;    /* head value for last sector  */
-   uint8_t last_sec;     /* sector value + cyl bits for last sector */
-   uint8_t last_cyl;     /* track value for last sector    */
-   uint32_t lowsec;       /* logical first sector     */
-   uint32_t size;         /* size of partition in sectors   */
+   unsigned char bootind;      /* boot indicator 0/ACTIVE_FLAG   */
+   unsigned char start_head;   /* head value for first sector    */
+   unsigned char start_sec;    /* sector value + cyl bits for first sector */
+   unsigned char start_cyl;    /* track value for first sector   */
+   unsigned char sysind;       /* system indicator      */
+   unsigned char last_head;    /* head value for last sector  */
+   unsigned char last_sec;     /* sector value + cyl bits for last sector */
+   unsigned char last_cyl;     /* track value for last sector    */
+   unsigned long lowsec;       /* logical first sector     */
+   unsigned long size;         /* size of partition in sectors   */
 };
 
 #define ACTIVE_FLAG  0x80  /* value for active in bootind field (hd0) */
@@ -107,15 +111,19 @@ struct minOptions {
    char *imagefile;
    char *path;
    char *fullPath;
+   char *destFile;
+   int hasDestFile;
 };
 
 struct minixConfig {
    FILE *image;
+   struct part_entry partition_table[4];
    struct superblock sb;
    unsigned int zone_size;
 };
 
-void parseArgs(int argc, char *const argv[], struct minOptions *options);
+void parseArgs(int argc, char *const argv[], 
+   struct minOptions *options, int whichProgram);
 void getMinixConfig(struct minOptions options, struct minixConfig *config);
 struct inode traversePath(struct inode *root, 
    unsigned int ninodes, char *path);

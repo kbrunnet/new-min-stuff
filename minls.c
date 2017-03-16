@@ -12,7 +12,7 @@ int main(int argc, char *const argv[])
    options.path = malloc(PATH_MAX);
    options.fullPath = malloc(PATH_MAX);
 
-   parseArgs(argc, argv, &options);
+   parseArgs(argc, argv, &options, IS_MINLS);
    strcpy(fullPath, options.fullPath);
 
 
@@ -25,7 +25,8 @@ int main(int argc, char *const argv[])
    numInodes = config.sb.ninodes;
 
    /* Read the root directory table */
-   fseekPartition(image, (2 + config.sb.i_blocks + config.sb.z_blocks) * config.sb.blocksize, SEEK_SET);
+   fseekPartition(image, (2 + config.sb.i_blocks + 
+      config.sb.z_blocks) * config.sb.blocksize, SEEK_SET);
 
    iTable = (struct inode*) malloc(numInodes * sizeof(struct inode));
    fread(iTable, sizeof(struct inode), numInodes, image);
@@ -43,7 +44,7 @@ int main(int argc, char *const argv[])
       config.sb.ninodes, options.path);
    // printf("INODE RETURNED: \n");
    if (MIN_ISDIR(destFile.mode)) {
-      printf("%s:\n", options.path);
+      printf("%s:\n", options.fullPath);
    }
    printInodeFiles(&destFile);
 
