@@ -1,5 +1,7 @@
 #include "minls.h"
 
+char fullPath[PATH_MAX] = "";
+
 int main(int argc, char *const argv[])
 {
    struct minOptions options;
@@ -10,7 +12,7 @@ int main(int argc, char *const argv[])
    options.path = malloc(PATH_MAX);
 
    parseArgs(argc, argv, &options);
-   strcpy(fileName, options.path);
+   strcpy(fullPath, options.path);
 
    /*
    printf("verbose: %d\npartition: %d\nsubpartition:%d\nimagefile:%s\npath:%s\n",
@@ -56,7 +58,7 @@ void printInodeFiles(struct inode *in) {
    if (MIN_ISREG(in->mode)) {
       printPermissions(in->mode);
       printf("%10u ", in->size);
-      printf("%s\n", fileName);
+      printf("%s\n", fullPath);
    }
 
    if (MIN_ISDIR(in->mode)) {

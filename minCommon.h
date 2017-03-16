@@ -106,9 +106,8 @@ struct minOptions {
    int subpartition;
    char *imagefile;
    char *path;
+   char *fullPath;
 };
-
-static char fileName[PATH_MAX] = "";
 
 struct minixConfig {
    FILE *image;

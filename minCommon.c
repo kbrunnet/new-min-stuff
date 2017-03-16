@@ -101,7 +101,7 @@ struct inode traversePath(struct inode *inodeTable, uint32_t ninodes, char *path
       }
 
       if (currEntry >= fileEntries + numFiles) {
-         fprintf(stderr, "File does not exist: %s\n", file);
+         // fprintf(stderr, "%s: File not found.\n", file);
          exit(EXIT_FAILURE);
       }
       currnode = *(struct inode *)getInode(currEntry->inode);

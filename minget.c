@@ -1,5 +1,7 @@
 #include "minget.h"
 
+char fullPath[PATH_MAX] = "";
+
 int main(int argc, char *const argv[])
 {
    struct minOptions options;
@@ -10,7 +12,7 @@ int main(int argc, char *const argv[])
    options.path = malloc(PATH_MAX);
 
    parseArgs(argc, argv, &options);
-   strcpy(fileName, options.path);
+   strcpy(fullPath, options.path);
 
    /*
    printf("verbose: %d\npartition: %d\nsubpartition:%d\nimagefile:%s\npath:%s\n",
@@ -53,7 +55,7 @@ int main(int argc, char *const argv[])
    	printf("%s\n", data);
    }
    else {
-   	printf("%s: Not a regular file\n", fileName);
+   	printf("%s: Not a regular file\n", fullPath);
    }
 
    exit(EXIT_SUCCESS);
