@@ -108,6 +108,8 @@ struct minOptions {
    char *path;
 };
 
+static char fileName[PATH_MAX] = "";
+
 struct minixConfig {
    FILE *image;
    struct part_entry partition_table[4];

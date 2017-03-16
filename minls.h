@@ -1,7 +1,5 @@
 #include "minCommon.h"
 
-static char fileName[PATH_MAX] = "";
-
 void printPartition(struct part_entry partitionPtr);
 void printSuperblock(struct superblock sb);
 void printFile(struct fileEntry *file);
