@@ -100,6 +100,15 @@ struct fileEntry {
    char name[DIRSIZ];
 };
 
+struct minOptions {
+   int verbose;
+   int partition;
+   int subpartition;
+   char *imagefile;
+   char *path;
+};
+
+void parseArgs(int argc, char *const argv[], struct minOptions *options);
 struct inode traversePath(struct inode *root, unsigned int ninodes, char *path);
 struct fileEntry *getFileEntries(struct inode directory);
 void *getInode(int inodeNum);

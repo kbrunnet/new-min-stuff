@@ -1,5 +1,47 @@
 #include "minCommon.h"
 
+void parseArgs(int argc, char *const argv[], struct minOptions *options) {
+   int opt;
+
+   while ((opt = getopt(argc, argv, "vp:s:")) != -1) {
+      switch (opt) {
+         case 'v':
+            options->verbose++;
+         break;
+
+         case 'p':
+            options->partition = atoi(optarg);
+         break;
+         
+         case 's':
+            options->subpartition = atoi(optarg);
+         break;
+
+         default:
+            fprintf(stderr, "Usage: minls [ -v ] [ -p part [ -s subpart ] ] imagefile [ path ]\n");
+            exit(EXIT_FAILURE);
+      }
+   }
+   if (optind < argc) {
+      strcpy(options->imagefile, argv[optind]);
+   }
+   else {
+      fprintf(stderr, "Usage: minls [ -v ] [ -p part [ -s subpart ] ] imagefile [ path ]\n");
+   }
+   optind++;
+   if (optind < argc) {
+      strcpy(options->path, argv[optind]);
+   }
+   else {
+      strcpy(options->path, "/");
+   }
+   if (options->path[0] != '/') {
+      char pathBase[PATH_MAX] = "/";
+      strcat(pathBase, options->path);
+      strcpy(options->path, pathBase);
+   }
+}
+
 /* 
  * Takes the root inode and an absolute path, and returns the inode 
  * of the requested file or directory.

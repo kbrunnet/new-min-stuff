@@ -2,50 +2,15 @@
 
 int main(int argc, char *const argv[])
 {
-   int verbose = 0;
-   int partition = -1;
-   int subpartition = -1;
-   char imagefile[NAME_MAX] = "";
-   char path[PATH_MAX] = "";
-   int opt;
-   while ((opt = getopt(argc, argv, "vp:s:")) != -1) {
-      switch (opt) {
-         case 'v':
-            verbose++;
-         break;
+   struct minOptions options;
+   options.verbose = 0;
+   options.partition = -1;
+   options.subpartition = -1;
+   options.imagefile = malloc(NAME_MAX);
+   options.path = malloc(PATH_MAX);
 
-         case 'p':
-            partition = atoi(optarg);
-         break;
-         
-         case 's':
-            subpartition = atoi(optarg);
-         break;
-
-         default:
-            fprintf(stderr, "Usage: minls [ -v ] [ -p part [ -s subpart ] ] imagefile [ path ]\n");
-            exit(EXIT_FAILURE);
-      }
-   }
-   if (optind < argc) {
-      strcpy(imagefile, argv[optind]);
-   }
-   else {
-      fprintf(stderr, "Usage: minls [ -v ] [ -p part [ -s subpart ] ] imagefile [ path ]\n");
-   }
-   optind++;
-   if (optind < argc) {
-      strcpy(path, argv[optind]);
-      strcpy(fileName, argv[optind]);
-   }
-   else {
-      strcpy(path, "/");
-   }
-   if (path[0] != '/') {
-      char pathBase[PATH_MAX] = "/";
-      strcat(pathBase, path);
-      strcpy(path, pathBase);
-   }
+   parseArgs(argc, argv, &options);
+   strcpy(fileName, options.path);
 
    /*
    printf("verbose: %d\npartition: %d\nsubpartition:%d\nimagefile:%s\npath:%s\n",
@@ -57,7 +22,7 @@ int main(int argc, char *const argv[])
    */
 
    // TODO: check for existing filename
-   image = fopen(imagefile, "rb");
+   image = fopen(options.imagefile, "rb");
 
    /* Read the partition table */
    fseek(image, 0x1BE, SEEK_SET);
@@ -112,7 +77,7 @@ int main(int argc, char *const argv[])
    // printf("\n");
    // printf("\n");
    // printf("\n");
-   struct inode destFile = traversePath(iTable, sb.ninodes, path);
+   struct inode destFile = traversePath(iTable, sb.ninodes, options.path);
    // printf("INODE RETURNED: \n");
    printInodeFiles(&destFile);
 
