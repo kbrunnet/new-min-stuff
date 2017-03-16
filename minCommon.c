@@ -1,4 +1,23 @@
 #include "minCommon.h"
+
+#define PARTITION_MSG \
+"Partition %d out of range.  Must be 0..3.\n"
+
+#define SUBPARTITION_MSG \
+"Subpartition %d out of range.  Must be 0..3.\n"
+
+#define SUB_INVALID "Not a Minix subpartition.\n"
+
+#define PART_INVALID "Not a Minix partition.\n"
+
+#define USAGE_MSG \
+"usage: %s  [ -v ] [ -p num [ -s num ] ] imagefile [ path ]\n\
+Options:\n\
+\t-p\t part    --- select partition for filesystem (default: none)\n\
+\t-s\t sub     --- select subpartition for filesystem (default: none)\n\
+\t-h\t help    --- print usage information and exit\n\
+\t-v\t verbose --- increase verbosity level\n"
+
 static uint32_t partitionOffset = 0;
 static uint32_t partitionSize = -1;
 char fullPathName[PATH_MAX] = "";
@@ -6,6 +25,7 @@ char fullPathName[PATH_MAX] = "";
 void parseArgs(int argc, char *const argv[], 
    struct minOptions *options, int whichProgram) {
    int opt;
+   opterr = 0;
 
    while ((opt = getopt(argc, argv, "vp:s:")) != -1) {
       switch (opt) {
@@ -15,15 +35,24 @@ void parseArgs(int argc, char *const argv[],
 
          case 'p':
             options->partition = atoi(optarg);
+            if (options->partition < 0 || options->partition > 3) {
+               fprintf(stderr, PARTITION_MSG, options->partition);
+               fprintf(stderr, USAGE_MSG, argv[0]);
+               exit(EXIT_FAILURE);
+            }
          break;
          
          case 's':
             options->subpartition = atoi(optarg);
+            if (options->subpartition < 0 || options->subpartition > 3) {
+               fprintf(stderr, SUBPARTITION_MSG, options->subpartition);
+               fprintf(stderr, USAGE_MSG, argv[0]);
+               exit(EXIT_FAILURE);
+            }
          break;
 
          default:
-            fprintf(stderr, "Usage: minls [ -v ] [ -p \
-               part [ -s subpart ] ] imagefile [ path ]\n");
+            fprintf(stderr, USAGE_MSG, argv[0]);
             exit(EXIT_FAILURE);
       }
    }
@@ -31,8 +60,7 @@ void parseArgs(int argc, char *const argv[],
       strcpy(options->imagefile, argv[optind]);
    }
    else {
-      fprintf(stderr, "Usage: minls [ -v ] [ -p part \
-         [ -s subpart ] ] imagefile [ path ]\n");
+      fprintf(stderr, USAGE_MSG, argv[0]);
    }
    optind++;
    if (optind < argc) {
@@ -63,36 +91,10 @@ void getMinixConfig(struct minOptions options, struct minixConfig *config) {
    config->image = fopen(options.imagefile, "rb");
 
    if (options.partition >= 0) {
-      /* Read the partition table */
-      fseekPartition(config->image, 0x1BE, SEEK_SET);
-
-      struct part_entry partition_table[4];
-      fread(partition_table, sizeof(struct part_entry), 4, config->image);
-
-      // for (i = 0; i < 4; i++) {
-      //    printf("i: %d\n", i);
-      //    printPartition(partition_table[i]);
-      // }
-
-      uint16_t *ptValid = malloc(sizeof(uint16_t));
-      fread(ptValid, sizeof(uint16_t), 1, config->image);
-      if (*ptValid != 0xAA55) {
-         fprintf(stderr, "not a valid partition table (%X)\n", *ptValid);
-         exit(EXIT_FAILURE);
+      setPartitionOffset(config->image, options.partition);
+      if (options.subpartition >= 0) {
+         setSubpartitionOffset(config->image, options.subpartition);
       }
-
-      struct part_entry *partition = partition_table + options.partition;
-      // if (partition->bootind != 0x80) {
-      //    fprintf(stderr, "Invalid partition entry\n");
-      //    exit(EXIT_FAILURE);
-      //    printf("doesn't look like minix: %X\n", partition->bootind);
-      // }
-      if (partition->sysind != 0x81) {
-         fprintf(stderr, "Not a MINIX partition\n");
-         exit(EXIT_FAILURE);
-      }
-      partitionOffset = partition->lowsec * 512;
-      partitionSize = partition->size;
    }
 
    /* Read the superblock */
@@ -103,13 +105,48 @@ void getMinixConfig(struct minOptions options, struct minixConfig *config) {
    // printSuperblock(sb);
 
    if (config->sb.magic != 0x4D5A) {
-      fprintf(stderr, "Bad magic number. (0x%x)\nThis doesn't \
-         look like a MINIX filesystem.\n",
+      fprintf(stderr, "Bad magic number. (0x%.4x)\nThis doesn't look like a MINIX filesystem.\n",
          config->sb.magic);
       exit(EXIT_FAILURE);
    }
    config->zone_size = config->sb.log_zone_size ? 
    (config->sb.blocksize << config->sb.log_zone_size) : config->sb.blocksize;
+}
+
+void setPartitionOffset(FILE *image, int partitionNum) {
+   setOffset(image, partitionNum, 0);
+}
+
+void setSubpartitionOffset(FILE *image, int partitionNum) {
+   setOffset(image, partitionNum, 1);
+}
+
+void setOffset(FILE *image, int partitionNum, int isSub) {
+   /* Read the partition table */
+   fseekPartition(image, 0x1BE, SEEK_SET);
+
+   struct part_entry partition_table[4];
+   fread(partition_table, sizeof(struct part_entry), 4, image);
+
+   // for (i = 0; i < 4; i++) {
+   //    printf("i: %d\n", i);
+   //    printPartition(partition_table[i]);
+   // }
+
+   uint16_t *ptValid = malloc(sizeof(uint16_t));
+   fread(ptValid, sizeof(uint16_t), 1, image);
+   if (*ptValid != 0xAA55) {
+      fprintf(stderr, "not a valid partition table (%X)\n", *ptValid);
+      exit(EXIT_FAILURE);
+   }
+
+   struct part_entry *partition = partition_table + partitionNum;
+   if (partition->sysind != 0x81) {
+      fprintf(stderr, isSub ? SUB_INVALID : PART_INVALID);
+      exit(EXIT_FAILURE);
+   }
+   partitionOffset = partition->lowsec * 512;
+   partitionSize = partition->size;
 }
 
 /* 

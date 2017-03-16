@@ -125,8 +125,10 @@ struct minixConfig {
 void parseArgs(int argc, char *const argv[], 
    struct minOptions *options, int whichProgram);
 void getMinixConfig(struct minOptions options, struct minixConfig *config);
-struct inode traversePath(struct inode *root, 
-   unsigned int ninodes, char *path);
+void setPartitionOffset(FILE *image, int partitionNum);
+void setSubpartitionOffset(FILE *image, int partitionNum);
+void setOffset(FILE *image, int partitionNum, int isSub);
+struct inode traversePath(struct inode *root, unsigned int ninodes, char *path);
 struct fileEntry *getFileEntries(struct inode directory);
 void *getInode(int inodeNum);
 void *copyZones(struct inode file);

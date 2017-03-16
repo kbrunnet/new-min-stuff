@@ -124,8 +124,8 @@ void printPartition(struct part_entry  partitionPtr) {
    printf("  %X\n", partitionPtr.last_head);
    printf("  %X\n", partitionPtr.last_sec);
    printf("  %X\n", partitionPtr.last_cyl);
-   printf("  %lX\n", partitionPtr.lowsec);
-   printf("  %lX\n", partitionPtr.size);
+   printf("  %lX\n", (unsigned long) partitionPtr.lowsec);
+   printf("  %lX\n", (unsigned long) partitionPtr.size);
 }
 
 void printSuperblock(struct superblock sb) {
