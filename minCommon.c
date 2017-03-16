@@ -137,8 +137,14 @@ void *copyZones(struct inode file) {
 
    while (nextData < data + file.size &&
           zoneIdx < DIRECT_ZONES) {
-      fseek(image, file.zone[zoneIdx] * zone_size, SEEK_SET);
-      fread(nextData, zone_size, 1, image);
+      uint32_t zoneNum = file.zone[zoneIdx];
+      if (zoneNum) {
+         fseek(image, zoneNum * zone_size, SEEK_SET);
+         fread(nextData, zone_size, 1, image);
+      }
+      else {
+         memset(nextData, 0, zone_size);
+      }
       nextData += zone_size;
       zoneIdx++;
    }
@@ -157,8 +163,14 @@ void *copyZones(struct inode file) {
 
    while (nextData < data + file.size &&
           zoneIdx < zoneNumsPerZone) {
-      fseek(image, indirectZones[zoneIdx] * zone_size, SEEK_SET);
-      fread(nextData, zone_size, 1, image);
+      uint32_t zoneNum = indirectZones[zoneIdx];
+      if (zoneNum) {
+         fseek(image, zoneNum * zone_size, SEEK_SET);
+         fread(nextData, zone_size, 1, image);
+      }
+      else {
+         memset(nextData, 0, zone_size);
+      }
       nextData += zone_size;
       zoneIdx++;
    }
@@ -181,8 +193,14 @@ void *copyZones(struct inode file) {
 
       while (nextData < data + file.size &&
              indirectZoneIdx < zoneNumsPerZone) {
-         fseek(image, indirectZones[indirectZoneIdx] * zone_size, SEEK_SET);
-         fread(nextData, zone_size, 1, image);
+         uint32_t zoneNum = indirectZones[indirectZoneIdx];
+         if (zoneNum) {
+            fseek(image, zoneNum * zone_size, SEEK_SET);
+            fread(nextData, zone_size, 1, image);
+         }  
+         else {
+            memset(nextData, 0, zone_size);
+         }
          nextData += zone_size;
          indirectZoneIdx++;
       }
