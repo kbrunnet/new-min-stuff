@@ -25,8 +25,9 @@ int main(int argc, char *const argv[])
    numInodes = config.sb.ninodes;
 
    /* Read the root directory table */
-   fseekPartition(image, (2 + config.sb.i_blocks + 
-      config.sb.z_blocks) * config.sb.blocksize, SEEK_SET);
+   fseekPartition(image, (2 + config.sb.i_blocks + config.sb.z_blocks)
+                         * config.sb.blocksize,
+                  SEEK_SET);
 
    iTable = (struct inode*) malloc(numInodes * sizeof(struct inode));
    fread(iTable, sizeof(struct inode), numInodes, image);

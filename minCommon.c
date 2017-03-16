@@ -10,13 +10,16 @@
 
 #define PART_INVALID "Not a Minix partition.\n"
 
+#define SB_MAG_MSG "Bad magic number. (0x%.4x)\n\
+                    This doesn't look like a MINIX filesystem.\n"
+
 #define USAGE_MSG \
-"usage: %s  [ -v ] [ -p num [ -s num ] ] imagefile [ path ]\n\
-Options:\n\
-\t-p\t part    --- select partition for filesystem (default: none)\n\
-\t-s\t sub     --- select subpartition for filesystem (default: none)\n\
-\t-h\t help    --- print usage information and exit\n\
-\t-v\t verbose --- increase verbosity level\n"
+   "usage: %s  [ -v ] [ -p num [ -s num ] ] imagefile [ path ]\n\
+    Options:\n\
+    \t-p\t part    --- select partition for filesystem (default: none)\n\
+    \t-s\t sub     --- select subpartition for filesystem (default: none)\n\
+    \t-h\t help    --- print usage information and exit\n\
+    \t-v\t verbose --- increase verbosity level\n"
 
 static uint32_t partitionOffset = 0;
 static uint32_t partitionSize = -1;
@@ -105,8 +108,7 @@ void getMinixConfig(struct minOptions options, struct minixConfig *config) {
    // printSuperblock(sb);
 
    if (config->sb.magic != 0x4D5A) {
-      fprintf(stderr, "Bad magic number. (0x%.4x)\nThis doesn't look like a MINIX filesystem.\n",
-         config->sb.magic);
+      fprintf(stderr, SB_MAG_MSG, config->sb.magic);
       exit(EXIT_FAILURE);
    }
    config->zone_size = config->sb.log_zone_size ? 
