@@ -1,11 +1,23 @@
 #include "minCommon.h"
 
+#define PARTITION_MSG \
+"Partition %d out of range.  Must be 0..3.\n"
+
+#define USAGE_MSG \
+"usage: %s  [ -v ] [ -p num [ -s num ] ] imagefile [ path ]\n\
+Options:\n\
+\t-p\t part    --- select partition for filesystem (default: none)\n\
+\t-s\t sub     --- select subpartition for filesystem (default: none)\n\
+\t-h\t help    --- print usage information and exit\n\
+\t-v\t verbose --- increase verbosity level\n"
+
 static uint32_t partitionOffset = 0;
 static uint32_t partitionSize = -1;
 char fullPathName[PATH_MAX] = "";
 
 void parseArgs(int argc, char *const argv[], struct minOptions *options) {
    int opt;
+   opterr = 0;
 
    while ((opt = getopt(argc, argv, "vp:s:")) != -1) {
       switch (opt) {
@@ -15,6 +27,11 @@ void parseArgs(int argc, char *const argv[], struct minOptions *options) {
 
          case 'p':
             options->partition = atoi(optarg);
+            if (options->partition < 0 || options->partition > 3) {
+               fprintf(stderr, PARTITION_MSG, options->partition);
+               fprintf(stderr, USAGE_MSG, argv[0]);
+               exit(EXIT_FAILURE);
+            }
          break;
          
          case 's':
@@ -22,8 +39,7 @@ void parseArgs(int argc, char *const argv[], struct minOptions *options) {
          break;
 
          default:
-            fprintf(stderr, "Usage: minls [ -v ] [ -p \
-               part [ -s subpart ] ] imagefile [ path ]\n");
+            fprintf(stderr, USAGE_MSG, argv[0]);
             exit(EXIT_FAILURE);
       }
    }
@@ -31,8 +47,7 @@ void parseArgs(int argc, char *const argv[], struct minOptions *options) {
       strcpy(options->imagefile, argv[optind]);
    }
    else {
-      fprintf(stderr, "Usage: minls [ -v ] [ -p part \
-         [ -s subpart ] ] imagefile [ path ]\n");
+      fprintf(stderr, USAGE_MSG, argv[0]);
    }
    optind++;
    if (optind < argc) {
@@ -80,7 +95,7 @@ void getMinixConfig(struct minOptions options, struct minixConfig *config) {
       //    printf("doesn't look like minix: %X\n", partition->bootind);
       // }
       if (partition->sysind != 0x81) {
-         fprintf(stderr, "Not a MINIX partition\n");
+         fprintf(stderr, "Not a Minix partition.\n");
          exit(EXIT_FAILURE);
       }
       partitionOffset = partition->lowsec * 512;
@@ -95,8 +110,7 @@ void getMinixConfig(struct minOptions options, struct minixConfig *config) {
    // printSuperblock(sb);
 
    if (config->sb.magic != 0x4D5A) {
-      fprintf(stderr, "Bad magic number. (0x%x)\nThis doesn't \
-         look like a MINIX filesystem.\n",
+      fprintf(stderr, "Bad magic number. (0x%.4x)\nThis doesn't look like a MINIX filesystem.\n",
          config->sb.magic);
       exit(EXIT_FAILURE);
    }
