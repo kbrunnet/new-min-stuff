@@ -31,19 +31,9 @@ int main(int argc, char *const argv[])
 
    iTable = (struct inode*) malloc(numInodes * sizeof(struct inode));
    fread(iTable, sizeof(struct inode), numInodes, image);
-   // printf("numInode %d\n", numInodes);
 
-   // printInodeFiles(iTable);
-
-   // printInode(iTable[16]);
-   // printInodeFiles(&iTable[16]);
-   
-   // printf("\n");
-   // printf("\n");
-   // printf("\n");
    struct inode destFile = traversePath(iTable, 
       config.sb.ninodes, options.path);
-   // printf("INODE RETURNED: \n");
    if (MIN_ISDIR(destFile.mode)) {
       printf("%s:\n", options.fullPath);
    }
@@ -53,7 +43,6 @@ int main(int argc, char *const argv[])
 }
 
 void printInodeFiles(struct inode *in) {
-   // printInode(*in);
    if (MIN_ISREG(in->mode)) {
       printPermissions(in->mode);
       printf("%10u ", in->size);
@@ -70,7 +59,6 @@ void printInodeFiles(struct inode *in) {
 void printFiles(struct fileEntry *fileEntries, int numFiles) {
    int i;
    for(i = 0; i < numFiles; i++) {
-      // printf("%u\n", fileEntries[i].inode);
       if (fileEntries[i].inode) {
          printFile(&fileEntries[i]);
       }
@@ -78,16 +66,8 @@ void printFiles(struct fileEntry *fileEntries, int numFiles) {
 }
 
 void printFile(struct fileEntry *file) {
-   // printf("%d ", file->inode);
    struct inode *iNode = (struct inode *) getInode(file->inode);
-   if (iNode == NULL) {
-      //if it gets here the inode is either
-      //not stored inside our iTable 
-      //OR, the inode was zero which is an
-      //invalid inode
-      // printf("null Inode\n");
-   }
-   else {   
+   if (iNode != NULL) {   
       printPermissions(iNode->mode);
       printf("%10u ", iNode->size);
       printf("%s\n", file->name);

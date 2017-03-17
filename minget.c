@@ -32,20 +32,9 @@ int main(int argc, char *const argv[])
 
    iTable = (struct inode*) malloc(numInodes * sizeof(struct inode));
    fread(iTable, sizeof(struct inode), numInodes, image);
-   // printf("numInode %d\n", numInodes);
 
-   // printInodeFiles(iTable);
-
-   // printInode(iTable[16]);
-   // printInodeFiles(&iTable[16]);
-   
-   // printf("\n");
-   // printf("\n");
-   // printf("\n");
    struct inode destFile = traversePath(iTable, 
    	config.sb.ninodes, options.path);
-   // printf("INODE RETURNED: \n");
-   // printInodeFiles(&destFile);
 
 	char *data = copyZones(destFile);
 	if (options.hasDestFile == HAS_DESTFILE) {
